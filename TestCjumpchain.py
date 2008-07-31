@@ -3,7 +3,7 @@ import cjumpchain
 from scipy.misc import comb
 from numpy import matrix
 from scipy.linalg import solve
-from numpy import allclose
+from numpy import allclose, array, zeros
 
 class TestCjumpchain(unittest.TestCase):
     def testMakeTupleList(self):
@@ -69,6 +69,7 @@ class TestCjumpchain(unittest.TestCase):
         
     def testMake2DimensionalArray(self):
         x = cjumpchain.Make2DimensionalArray(5)
+        #allclose is a method of testing if two vectors/arrays are equal
         self.assertTrue(allclose(x,[[0.0, 0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0, 0.0]]))
         
         x[0][3] = 17
@@ -80,8 +81,8 @@ class TestCjumpchain(unittest.TestCase):
         self.assertTrue(isinstance(x[0][2],float))
         
         #Test the comment under "Calculating the transition matrix using Equation 24"
-        transition_matrix = cjumpchain.Make2DimensionalArray(4*(5+1)+1)
-        for j in range(0,4*(5+1)+1):
+        transition_matrix = cjumpchain.Make2DimensionalArray(4*(5-1)+1)
+        for j in range(0,4*(5-1)+1):
             self.assertTrue(sum(transition_matrix[j]) == 0.0)
         
     def testCalculateLogPi(self):
@@ -166,28 +167,28 @@ class TestCjumpchain(unittest.TestCase):
         y=comb(5,2)
         self.assertAlmostEqual(x,y,1)
         
-    def testUncondProbSTT(self):
+    def testUncondProbSTTGlobal(self):
         current_state_for_uncond_probs = [1000, 1000]
         num_sum=20
         #sigma is defined as = (lambda, b, B, alpha, mu)
         sigma = (.01, .1, 1000, .05, .1)
-        x = cjumpchain.UncondProbSTT(current_state_for_uncond_probs, sigma, num_sum)
+        x = cjumpchain.UncondProbSTTGlobal(current_state_for_uncond_probs, sigma, num_sum)
         self.assertAlmostEqual(x, 99.7006007003,6)
         #99.70 is the value calculated by Tallly using Mathematica
         
         sigma = (0.1, 0.2, 2000, 0.10, 0.11) #redefine sigma
-        x = cjumpchain.UncondProbSTT(current_state_for_uncond_probs, sigma, num_sum)
+        x = cjumpchain.UncondProbSTTGlobal(current_state_for_uncond_probs, sigma, num_sum)
         self.assertAlmostEqual(x, 109.0710861,6)
         
-    def testUncondProbSBB(self):
+    def testUncondProbSBBGlobal(self):
         current_state_for_uncond_probs = [1000,1000]
         num_sum = 20
         sigma = [.01, .1, 1000, .05, .1]
-        x = cjumpchain.UncondProbSBB(current_state_for_uncond_probs, sigma, num_sum)
+        x = cjumpchain.UncondProbSBBGlobal(current_state_for_uncond_probs, sigma, num_sum)
         self.assertAlmostEqual(x, 0.00999,6)
         
         sigma = (0.1, 0.2, 2000, 0.10, 0.11) #redefine sigma
-        x = cjumpchain.UncondProbSBB(current_state_for_uncond_probs, sigma, num_sum)
+        x = cjumpchain.UncondProbSBBGlobal(current_state_for_uncond_probs, sigma, num_sum)
         self.assertAlmostEqual(x, 0.024975,6)
         
     def testUncondProbSBarrowTGlobal(self):
@@ -217,7 +218,7 @@ class TestCjumpchain(unittest.TestCase):
         current_state_for_uncond_probs = [1000,1000,0,1]
         num_sum = 20
         sigma = [.01, .1, 2000, .05, .1]
-        x = cjumpchain.UncondProbSBT(current_state_for_uncond_probs, sigma, num_sum)
+        x = cjumpchain.UncondProbSBTGlobal(current_state_for_uncond_probs, sigma, num_sum)
         self.assertAlmostEqual(x, 5.04657780429e-037,6)            
     
     def testLogSum(self):
@@ -257,20 +258,20 @@ class TestCjumpchain(unittest.TestCase):
         num_sum=20
         x = cjumpchain.UnconditionalTransitionProbability("kappa", current_state_of_cond_jump_chain, sigma)
         self.assertAlmostEqual(x,7.48833482867e-301)
-        #Verifying each of the instantenous
+        #Verifying each of the instantaneous
         #s_bt, s_tt, s_b_arrow_t, s_bb rates
         
         current_state_for_uncond_probs = current_state_of_cond_jump_chain[0:2]
-        s_bb = cjumpchain.UncondProbSBB(current_state_for_uncond_probs, sigma, num_sum)
+        s_bb = cjumpchain.UncondProbSBBGlobal(current_state_for_uncond_probs, sigma, num_sum)
         self.assertAlmostEqual(s_bb, 0.0024975)
         
-        s_tt = cjumpchain.UncondProbSTT(current_state_of_cond_jump_chain, sigma, num_sum)
+        s_tt = cjumpchain.UncondProbSTTGlobal(current_state_of_cond_jump_chain, sigma, num_sum)
         self.assertAlmostEqual(s_tt, 99.7006007003) #Tally's mathematica calculation
         
-        s_b_arrow_t = cjumpchain.UncondProbSBarrowT(current_state_of_cond_jump_chain, sigma, num_sum)
+        s_b_arrow_t = cjumpchain.UncondProbSBarrowTGlobal(current_state_of_cond_jump_chain, sigma, num_sum)
         self.assertAlmostEqual(s_b_arrow_t, 1.49322036556e-298)
         
-        s_bt = cjumpchain.UncondProbSBT(current_state_of_cond_jump_chain, sigma, num_sum)
+        s_bt = cjumpchain.UncondProbSBTGlobal(current_state_of_cond_jump_chain, sigma, num_sum)
         self.assertAlmostEqual(s_bt, 7.46610182779e-299)
         
         sum_of_rates = s_bb + s_tt + s_b_arrow_t + s_bt
@@ -286,6 +287,27 @@ class TestCjumpchain(unittest.TestCase):
         #Furthermore, s_bt=s_tt=s_b_arrow_t=0.0, and s_bb=5e-009, 
         #sum_of_rates=5e-009
         self.assertEqual(x, 1.0)
+
+    def testUncondProbSTT(self):
+        current_state_for_uncond_probs = [6,1,0,1]
+        num_sum=20
+        #sigma is defined as = (lambda, b, B, alpha, mu)
+        sigma = (.01, .1, 1000, .05, .1)
+        tt = cjumpchain.UncondProbSTTGlobal(current_state_for_uncond_probs, sigma, num_sum)
+        bt = cjumpchain.UncondProbSBTGlobal(current_state_for_uncond_probs, sigma, num_sum)
+        bb =  cjumpchain.UncondProbSBBGlobal(current_state_for_uncond_probs, sigma, num_sum)
+    
+        smalltt = cjumpchain.UncondProbSTT(current_state_for_uncond_probs, sigma, num_sum)
+        smallbt = cjumpchain.UncondProbSBT(current_state_for_uncond_probs, sigma, num_sum)
+        smallbb = cjumpchain.UncondProbSBB(current_state_for_uncond_probs, sigma, num_sum)
+        kappatt = cjumpchain.UncondProbKappa("s_tt", current_state_for_uncond_probs, sigma, num_sum)
+        kappabt = cjumpchain.UncondProbKappa("s_bt", current_state_for_uncond_probs, sigma, num_sum)
+        kappabb = cjumpchain.UncondProbKappa("s_bb", current_state_for_uncond_probs, sigma, num_sum)
+        
+        #Testing if tt_global is really the sum of smalltt+kappa
+        self.assertEqual(tt,smalltt+kappatt)
+        self.assertAlmostEqual(bt,smallbt+kappabt)
+        self.assertEqual(bb,smallbb+kappabb)
         
     def testLinearEquationSolver(self):
         A=matrix([[1,1,1],[4,4,3],[7,8,5]]) # 3 lines 3 rows
@@ -293,7 +315,18 @@ class TestCjumpchain(unittest.TestCase):
         x = cjumpchain.LinearEquationSolver(A, b)
         #all close is a way of testing whether two vectors are equal
         self.assertTrue(allclose(x,matrix([1.,-2.,2.]).transpose()))
-                         
+    
+    def testNormalize(self):
+        row = array([1,2,3,4], dtype=float)
+        x = cjumpchain.Normalize(row)
+        #allclose is a method of testing if two vectors/arrays are equal
+        self.assertTrue(allclose(x, [1/10.,2/10.,3/10.,4/10.]))
+        
+        #Test if it can normalize a zero vector
+        row = zeros(4)
+        x = cjumpchain.Normalize(row)
+        self.assertTrue(allclose(x,[0,0,0,0]))
+                                             
 if __name__ == '__main__':
     suite = unittest.TestLoader().loadTestsFromTestCase(TestCjumpchain)
     unittest.TextTestRunner(verbosity=2).run(suite)

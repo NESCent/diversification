@@ -16,7 +16,7 @@ from is_classes import Level
 from is_classes import Tree
 from is_classes import Node
 from levels import DemarcateLevels
-from numpy import zeros, eye, array, allclose
+from numpy import sum, zeros, eye, array, allclose
 from scipy.misc import comb
 from scipy.misc import factorial
 from scipy.linalg import solve
@@ -154,15 +154,19 @@ def GetEvents():
     # Also see Figure 1, page 6.
     # set() is a python command for creating a set from a list.
     
-       
-    bigbig_K = set(['kappa', 's_tt', 's_bb', 's_bt'])
+    #Notice that I erased 's_tt', 's_bb', 's_bt' b/c
+    #kappa+smaller_s_tt = s_tt
+    #kappa+smaller_s_bt = s_bt
+    #kappa+smaller_s_bb = s_bb  
+    bigbig_K = set(['kappa', 'smaller_s_tt', 'smaller_s_bt', 'smaller_s_bb'])
 
     # m_1 is the migration of next_coalescing_lineage1: i.e., lineage whose
     # state is state_of_next_coalescing_lineages_1;
     # m_2 is the migration of next_coalescing_lineage1: i.e., lineage whose
     # state is state_of_next_coalescing_lineages_2;
     # 's_b_arrow_t' is any other migration
-    bigbig_M = set(['m_1', 'm_2', 's_b_arrow_t'])
+    #Again, smaller_s_b_arrow_t = m_1+m_2
+    bigbig_M = set(['m_1', 'm_2', 'smaller_s_b_arrow_t'])
 
     # bigbig_H = bigbig_K union bigbig_M. 
     bigbig_H = bigbig_K.union(bigbig_M)
@@ -415,7 +419,12 @@ def ApplyEvent(z,w):
     x_2 = z[3]
     if (IsValidState(z)==False):
         return (-1,-1,-1,-1)
-    if (w=="s_bt" or w=="s_bb" or w=="s_bt"):
+    if (w=="smaller_s_bt" or w=="smaller_s_bb" or w=="smaller_s_bt"):
+        #Since ApplyEvent only does for states in the current level
+        #any of those would take us to the next next, so return (-1,-1,-1,-1)
+        #Also notice that we make the smaller_s_bt as
+        #all s_bt excluding kappa. Same definition apply for s_bb and 
+        #s_tt
         return (-1,-1,-1,-1)
     if (w=="kappa"):
         if (x_1==1 and x_2==1):
@@ -423,20 +432,16 @@ def ApplyEvent(z,w):
                 return (-1,-1,-1,-1)
             #(q_t, r_t, x_1, x_2) --> (q_t, r_t-1, UNDEFINED, UNDEFINED)
             return (q_t, r_t-1, -1, -1)    
-        if (x_1==1 and x_2==0):
+        if ((x_1==1 and x_2==0) or (x_1==0 and x_2==1)):
             if (r_t<1):
                 return (-1,-1,-1,-1)
             return (q_t,r_t-1, -1, -1)
-        if (x_1==0 and x_2==1):
-            if (r_t<1):
-                return (-1,-1,-1,-1)
-            return (q_t, r_t-1,-1,-1)
         if (x_1==0 and x_2==0):
             if(q_t<1):
                 return (-1,-1,-1,-1)
             return (q_t-1, r_t, -1, -1)
         else:
-            #either x_1 is -1 or x_2 is -1
+            #either x_1 is -1 or x_2 is -1 or some invalid input
             return (-1,-1,-1,-1)
     if(w=="m_1"):
         if(x_1==1):
@@ -615,11 +620,7 @@ def GetLinearEquations(state_space_at_current_level,sigma):
     m1_vector = [ApplyEvent(z,"m_1") for z in state_space_at_current_level]
     m2_vector = [ApplyEvent(z,"m_2") for z in state_space_at_current_level]
     s_b_arrow_t_vector = [ApplyEvent(z,"s_b_arrow_t") for z in state_space_at_current_level]
-    #print "m1_vector is: " + str(m1_vector)
-    #print "m2_vector is: " + str(m2_vector)
-    #print "s_b_arrow_t_vector is: " + str(s_b_arrow_t_vector)
-    x = m1_vector[4]
-    #print "m1_vector[4] is: " + str(x)
+
     #For instance, the following code
     #state_space_at_current_level = GetCondJumpChainStateSpace(2)
     #print state_space_at_current_level
@@ -903,8 +904,9 @@ def CalculatePiStar(n_t, current_state_for_uncond_probs, sigma, num_sum=20):
     
     return numerator/denominator     
     
-def UncondProbSTT(current_state_for_uncond_probs, sigma, num_sum=20):
+def UncondProbSTTGlobal(current_state_for_uncond_probs, sigma, num_sum=20):
     """
+    The s_tt global, that includes s_tt and kappa. 
     Calculates p(S_TT|q_t,r_t), probability of speciation event within 
     the neotropics that is captured in the history of the sample, 
     conditioned on the fact that at time t the numbers of ancestral 
@@ -948,8 +950,9 @@ def UncondProbSTT(current_state_for_uncond_probs, sigma, num_sum=20):
             sum=sum+ float(CalculatePiStar(k-1,current_state_for_uncond_probs,sigma,num_sum))/k
     return coefficient*sum
 
-def UncondProbSBB(current_state_for_uncond_probs, sigma, num_sum=20):
+def UncondProbSBBGlobal(current_state_for_uncond_probs, sigma, num_sum=20):
     """
+    That incluces regular s_bb and kappa (kappa could be 0)
     Calculates p(S_BB | q_t), the probability of speciation event in the boreal region 
     that is captured in the history of the sample. This is simple 
     since boreal region maintains a constant fixed number of species, 
@@ -983,7 +986,7 @@ def UncondProbSBB(current_state_for_uncond_probs, sigma, num_sum=20):
     B=sigma[2]
     return 2*lam*comb(q_t,2)/(B*B)
 
-def UncondProbSBT(current_state_for_uncond_probs, sigma, num_sum=20):
+def UncondProbSBTGlobal(current_state_for_uncond_probs, sigma, num_sum=20):
     """
     Calculates p(S_{BT} | n_t,q_t,r_t), the probability of migration 
     of species from the boreal to the neotropics region when the duplicate 
@@ -1079,6 +1082,30 @@ def UncondProbSBarrowTGlobal(current_state_for_uncond_probs, sigma, num_sum=20):
             sum=sum+CalculatePi(k-1,sigma)/k
     return coef*sum 
 
+def UncondProbSTT(current_state_for_uncond_probs, sigma, num_sum=20):
+    """
+    s_tt that is exclusive of kappa!
+    """
+    tt_global = UncondProbSTTGlobal(current_state_for_uncond_probs, sigma, num_sum=20)
+    kappa = UncondProbKappa("s_tt", current_state_for_uncond_probs, sigma, num_sum)
+    return tt_global - kappa
+
+def UncondProbSBB(current_state_for_uncond_probs, sigma, num_sum=20):  
+    """
+    s_bb that is exclusive of kappa!
+    """
+    bb_global = UncondProbSBBGlobal(current_state_for_uncond_probs, sigma, num_sum=20)
+    kappa = UncondProbKappa("s_bb", current_state_for_uncond_probs, sigma, num_sum)
+    return bb_global - kappa
+
+def UncondProbSBT(current_state_for_uncond_probs, sigma, num_sum=20):
+    """
+    s_bt that is exclusive of kappa!
+    """
+    bt_global = UncondProbSBTGlobal(current_state_for_uncond_probs, sigma, num_sum=20)
+    kappa = UncondProbKappa("s_bt", current_state_for_uncond_probs, sigma, num_sum)
+    return bt_global - kappa
+        
 def UncondProbSBarrowT(current_state_for_uncond_probs, sigma, num_sum=20):
     """
     Calculates p(S_{B->T}), the probability one of the not-next-coalescing-lineage's
@@ -1273,17 +1300,20 @@ def UncondProbKappa(event, current_state_for_uncond_probs, sigma, num_sum=20):
     x_1 = current_state_for_uncond_probs[2]
     x_2 = current_state_for_uncond_probs[3]
     if (event=="s_bt"):
-        temp = UncondProbSBT(current_state_for_uncond_probs, sigma, num_sum)
-        if (q_t!=0 and r_t!=0):
-            return temp / (q_t*r_t)
+        if((x_1==0 and x_2==1) or (x_1==1 and x_2==0)):
+            temp = UncondProbSBTGlobal(current_state_for_uncond_probs, sigma, num_sum)
+            if (q_t!=0 and r_t!=0):
+                return temp / (q_t*r_t)
     if (event=="s_bb"):
-        if(comb(q_t,2)!=0):
-            temp = UncondProbSBB(current_state_for_uncond_probs, sigma, num_sum)
-            return temp / comb(q_t, 2)
+        if(x_1==0 and x_2==0):
+            if(comb(q_t,2)!=0):
+                temp = UncondProbSBBGlobal(current_state_for_uncond_probs, sigma, num_sum)
+                return temp / comb(q_t, 2)
     if (event=="s_tt"):
-        if(comb(r_t,2)!=0):
-            temp = UncondProbSTT(current_state_for_uncond_probs, sigma, num_sum)
-            return temp / comb(r_t,2)
+        if(x_1==1 and x_2==1):
+            if(comb(r_t,2)!=0):
+                temp = UncondProbSTTGlobal(current_state_for_uncond_probs, sigma, num_sum)
+                return temp / comb(r_t,2)
     return 0
 
 def UnconditionalTransitionProbability(event, current_state_of_cond_jump_chain, sigma):
@@ -1392,7 +1422,7 @@ def UnconditionalTransitionProbability(event, current_state_of_cond_jump_chain, 
     #in the denominator map. 
     numerator_event_to_function = {'s_tt': UncondProbKappa, 's_bb': UncondProbKappa, 'smaller_s_b_arrow_t': UncondProbSBarrowT, 's_bt': UncondProbKappa, 'm_1':UncondProbM1, 'm_2':UncondProbM2}
     
-    denominator_event_to_function = {'s_tt': UncondProbSTT, 's_bb': UncondProbSBB, 'smaller_s_b_arrow_t': UncondProbSBarrowT, 's_bt': UncondProbSBT, 'm_1':UncondProbM1, 'm_2':UncondProbM2}
+    denominator_event_to_function = {'s_tt': UncondProbSTTGlobal, 's_bb': UncondProbSBBGlobal, 'smaller_s_b_arrow_t': UncondProbSBarrowT, 's_bt': UncondProbSBTGlobal, 'm_1':UncondProbM1, 'm_2':UncondProbM2}
     # e loops over events in set(['s_tt', 's_bb',  's_bt', 'm_1', 'm_2','smaller_s_b_arrow_t'])
     # we will also need the sum of all rates, for calculating the
     # probabilities from rates (basically, the sum is the denominator is
@@ -1417,26 +1447,6 @@ def UnconditionalTransitionProbability(event, current_state_of_cond_jump_chain, 
     # This is basically Eqn. 23, with the numerator and denominator.
     probability_of_event = numerator/sum_of_rates
     return(probability_of_event)
-
-def PickNextStateofChain(row_of_transition_matrix):
-    """
-    """
-    return((0, 0.0))
-
-def WhetherInTheSameLevel(state1, state2):
-    """
-    """
-    return(False)
-
-def ChooseLineageandUpdateDelta(current_delta):
-    """
-    """
-    return(None)
-
-def MovetoNextLevel(current_delta, current_level, next_level):
-    """
-    """
-    return(())
 
 def MakeTransitionMatrixForLevel(level_number, sigma):
     """
@@ -1487,13 +1497,13 @@ def MakeTransitionMatrixForLevel(level_number, sigma):
     -------
 
     When the conditional jump chain is in level k (i.e., the total
-    number of lineages = k), the number of states at that level is 4(k+1) (see
+    number of lineages = k), the number of states at that level is 4(k-1) (see
     paragraph 3, page 19). Besides transitioning within level k, i.e.,
     among its 4(k+1) states, the chain can also effect precisely one
     transition to a state in level k-1, representing the speciation involving the two
     next_coalescing_lineages whose character states (whether 0/1) are
     represented in state_of_cond_jump_chain. We add this state as the
-    4(k+1)+1-th state in the transition matrix.
+    4(k-1)+1-th state in the transition matrix.
     
     The precise identity of this state in level k-1 does not matter. 
     All that we need is to be able calculate the probability of the 
@@ -1519,7 +1529,6 @@ def MakeTransitionMatrixForLevel(level_number, sigma):
     # See function GetEvents() for more details.
     # Also see Page 19, segment entitled "Events as operators on states". 
     (bigbig_K, bigbig_M, bigbig_H) = GetEvents()
-
 
     # ========================================================================
     # Begin Task: Solving the system of equations represented by Equation 25 #
@@ -1560,7 +1569,7 @@ def MakeTransitionMatrixForLevel(level_number, sigma):
     state_space_at_the_current_level = GetCondJumpChainStateSpace(level_number)
     assert(len(state_space_at_the_current_level) == 4*(k-1))
     # In python, range(0, n) = [0, 1, 2, ..., n-1]
-    for j in range(0, 4*(k+1)):
+    for j in range(0, 4*(k-1)):
         assert(state_to_index_in_transition_matrix[state_space_at_the_current_level[j]] == j)
     
     # I am using the python map syntax. 
@@ -1573,12 +1582,12 @@ def MakeTransitionMatrixForLevel(level_number, sigma):
     # equation in the form of a vector of length 4(k+1)+1, where the
     # i-th element of the vector is the coefficient of the unknown z_i,
     # and the last element is the constant in the equation. 
-    system_of_equations = [GetLinearEquation(z,sigma) for z in state_space_at_the_current_level]
+    matrix,b = GetLinearEquations(state_space_at_the_current_level, sigma)
         
     # May be we can use an equation solver from scipy? 
     # In any case, solution *must* be a vector of length 4(k+1), such that
     # solution[j] = Pr(F | z) where z = state_space_at_the_current_level[j]
-    solution = LinearEquationSolver(system_of_equations)
+    solution = LinearEquationSolver(matrix, b)
     # ======================================================================
     # End Task: Solving the system of equations represented by Equation 25 #
     # ======================================================================
@@ -1590,11 +1599,11 @@ def MakeTransitionMatrixForLevel(level_number, sigma):
 
     # make a 2-dimensional array of dimensions 4(k+1)+1 x 4(k+1)+1
     # Make2DimensionalArray should initialize the array with 0.0
-    transition_matrix = Make2DimensionalArray(4*(k+1)+1)
+    transition_matrix = Make2DimensionalArray(4*(k-1)+1)
         
     # This is to make sure that the array is initialized properly.
     # In python, range(0, n) = [0, 1, 2, ..., n-1]
-    for j in range(0, 4*(k+1)+1):
+    for j in range(0, 4*(k-1)+1):
         # assert that each row sums to 0.0. If the assert fails, the
         # program will exit at this point
         assert(sum(transition_matrix[j]) == 0.0)
@@ -1626,12 +1635,19 @@ def MakeTransitionMatrixForLevel(level_number, sigma):
             # that the chain transitions when event w happens when it (the chain)
             # is in state z.
             w_of_z = ApplyEvent(z, w)
-            column = state_to_index_in_transition_matrix[w_of_z]
+            #If column == (-1,-1,-1,-1), which means the event
+            #cannot be applied to z, then P(w|z)=0, so we don't need to 
+            #fill out this entry anyhow. 
+            #Also make sure column != (,,-1,-1),that is, 
+            #when the event is "kappa". 
+            if (w_of_z != (-1,-1,-1,-1) and w_of_z[2]!=-1 and w_of_z[3]!=-1):
+                column = state_to_index_in_transition_matrix[w_of_z]
+   
             # In the numerator of the right side of Eq. 24, 
             #   1. Pr(F | w(z)) is, in terms of the program's variables,
             #      solution[column], since
             #           a. solution[j] = Pr(F | z) where z = state_space_at_the_current_level[j] 
-            #           b. state_space_at_the_current_level[w_of_z] = column, 
+            #           b. state_to_index_in_transition_matrix[w_of_z] = column, 
             #              and this implies w_of_z = state_space_at_the_current_level[column]
             #           
             #   2. Pr(w | z) is to be calculated using the function
@@ -1645,16 +1661,58 @@ def MakeTransitionMatrixForLevel(level_number, sigma):
             #   after normalization it will become [1/(1+2+3+4), 2/10, 3/10, 4/10]
             #   After normalization the elements in the vector should add
             #   up to 1.
-            transition_matrix[row][column] = solution[column] * UnconditionalTransitionProbability(w, z, sigma)
-            
+            #   transition_matrix[row][column] = numerator in eqn(24)
+                transition_matrix[row][column] = solution[column] * UnconditionalTransitionProbability(w, z, sigma)
         Normalize(transition_matrix[row])
     # =================================================================
     # End Task: Calculating the transition matrix using Equation 24 #
     # =================================================================
+    #Note that last row of transition_matrix is always 0, b/c we don't
+    #even touch it! 
     return((transition_matrix, state_to_index_in_transition_matrix, index_in_transition_matrix_to_state))
         
-        
-                     
+def PickNextStateofChain(row_of_transition_matrix):
+    """
+    """
+    return((0, 0.0))
+
+def WhetherInTheSameLevel(state1, state2):
+    """
+    """
+    return(False)
+
+def ChooseLineageandUpdateDelta(current_delta):
+    """
+    """
+    return(None)
+
+def MovetoNextLevel(current_delta, current_level, next_level):
+    """
+    """
+    return(())
+
+def Normalize(row):
+    """
+    Input parameter
+    ----------------
+    row        an array of class ndarray, such as ndarray(2, 3, 5, 6)
+    
+    Details
+    -------
+    If the input is (2,3,5,6), return (2/(2+3+5+6), 3/(16), 5/16, 6/16)
+    
+    Output value
+    ------------
+    Return a normalized version of the array. 
+    """
+    #Scipy function calculating the sum of the entries of the array
+    sum = row.sum()  
+    if sum==0:
+        #in case it's a row of zeros, don't want to divide by 0.
+        return row
+    for i in range(len(row)):
+        row[i] = float(row[i])/sum
+    return row
 
 def GetInitialStatesofLineages(delta):
     """
@@ -2164,4 +2222,10 @@ def SampleFromIS(G, delta, sigma, (transition_matrices, state_to_index_in_transi
     return(probability_of_history)            
 
 if __name__ == "__main__":
-    print "hello world!"
+    current_state_for_uncond_probs = [6,1,1,0]
+    num_sum=20
+    #sigma is defined as = (lambda, b, B, alpha, mu)
+    sigma = (.01, .1, 2000, .05, .1)
+    a,b,c = MakeTransitionMatrixForLevel(2, sigma)
+    print a
+    print b
