@@ -57,13 +57,13 @@ class TestCjumpchain(unittest.TestCase):
         x = cjumpchain.ApplyEvent((0,6,0,1), "m_2")
         self.assertEqual(x,(-1,-1,-1,-1))
         
-        x = cjumpchain.ApplyEvent((2,8,1,1), "s_b_arrow_t")
+        x = cjumpchain.ApplyEvent((2,8,1,1), "smaller_s_b_arrow_t")
         self.assertEqual(x,(3,7,1,1))
         
         x = cjumpchain.ApplyEvent((0,1,1,1), "m_1")
         self.assertEqual(x, (-1,-1,-1,-1)) #invalid input
     
-        x = cjumpchain.ApplyEvent((2,0,0,0), "s_b_arrow_t")
+        x = cjumpchain.ApplyEvent((2,0,0,0), "smaller_s_b_arrow_t")
         #cannot operate "s_b_arrow_t" on (2,0,0,0)
         self.assertEqual(x, (-1,-1,-1,-1))
         
@@ -320,12 +320,22 @@ class TestCjumpchain(unittest.TestCase):
         row = array([1,2,3,4], dtype=float)
         x = cjumpchain.Normalize(row)
         #allclose is a method of testing if two vectors/arrays are equal
-        self.assertTrue(allclose(x, [1/10.,2/10.,3/10.,4/10.]))
+        self.assertTrue(allclose(x, [.1,.2,.3,.4]))
         
         #Test if it can normalize a zero vector
         row = zeros(4)
         x = cjumpchain.Normalize(row)
         self.assertTrue(allclose(x,[0,0,0,0]))
+    
+    def testMakeTransitionMatrixForLevel(self):
+        sigma = (.01, .1, 2000, .05, .1)
+        state_space_at_current_level = cjumpchain.GetCondJumpChainStateSpace(4)
+        #matrix,state_to_index,index_to_state = cjumpchain.MakeTransitionMatrixForLevel(4, sigma)
+        #Testing if sum of each row of matrix equal to P(F|z) until second to last row
+        #A, b = cjumpchain.GetLinearEquations(state_space_at_current_level,sigma)
+        #solution = cjumpchain.LinearEquationSolver(A,b)
+        #for row in range(len(matrix[0])-1):
+            #self.assertEqual(matrix[row].sum(), solution[row])
                                              
 if __name__ == '__main__':
     suite = unittest.TestLoader().loadTestsFromTestCase(TestCjumpchain)

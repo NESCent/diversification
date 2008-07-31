@@ -28,6 +28,13 @@ import math
 #sys.path.append('C:\Users\Lonnie\Desktop\Summer2008_2\Summer2008\src')
 #sys.path.append('C:\Users\Lonnie\Desktop\Summer2008_2\Summer2008\src')
 #sys.path.append('C:\Documents and Settings\Owner\Desktop\Summer2008\src')
+def Equal(a, b):
+    """
+    For testing purposes only, equal if float a and float b are close 
+    enough they're identically equal
+    """
+    return abs(a-b) < a*1e-7
+    
 def CombinationChoose2(list,allcomb,j):
     """
     Returns all the j choose 2 combinations of a list of j
@@ -459,10 +466,10 @@ def ApplyEvent(z,w):
             else:
                 return tuple
             
-    if(w=="s_b_arrow_t"):
+    if(w=="smaller_s_b_arrow_t"):
         #IMPORTANT!!!!
-        #Here I take "s_b_arrow_t" to mean NOT "m_1" NOR "m_2, that is: 
-        #"m_1", "m_2" and "s_b_arrow_t" form an disjoint set!
+        #Here I take "smaller_s_b_arrow_t" to mean NOT "m_1" NOR "m_2, that is: 
+        #"m_1", "m_2" and "smaller_s_b_arrow_t" form an disjoint set!
         #Only true for conditional probability. For uncondtional ones,
         #m_1 and m_2 ARE s_b_arrow_t events. But for 
         #conditional cases, "s_b_arrow_t" really means those "s_b_arrow_t"
@@ -605,7 +612,7 @@ def GetLinearEquations(state_space_at_current_level,sigma):
     #First, create a Probability of w given Z vector
     prob_m1_vector = [-UnconditionalTransitionProbability("m_1", z, sigma) for z in state_space_at_current_level]
     prob_m2_vector = [-UnconditionalTransitionProbability("m_2", z, sigma) for z in state_space_at_current_level]
-    prob_s_b_arrow_t_vector = [-UnconditionalTransitionProbability("s_b_arrow_t", z, sigma) for z in state_space_at_current_level]
+    prob_s_b_arrow_t_vector = [-UnconditionalTransitionProbability("smaller_s_b_arrow_t", z, sigma) for z in state_space_at_current_level]
     #print "prob_m1_vector is: " + str(prob_m1_vector)
     #print "prob_m2_vector is: " + str(prob_m2_vector)
     #print "prob_s_b_arrow_t_vector is: " + str(prob_s_b_arrow_t_vector)
@@ -619,8 +626,10 @@ def GetLinearEquations(state_space_at_current_level,sigma):
     
     m1_vector = [ApplyEvent(z,"m_1") for z in state_space_at_current_level]
     m2_vector = [ApplyEvent(z,"m_2") for z in state_space_at_current_level]
-    s_b_arrow_t_vector = [ApplyEvent(z,"s_b_arrow_t") for z in state_space_at_current_level]
-
+    s_b_arrow_t_vector = [ApplyEvent(z,"smaller_s_b_arrow_t") for z in state_space_at_current_level]
+    #print m1_vector
+    #print m2_vector
+    #print s_b_arrow_t_vector
     #For instance, the following code
     #state_space_at_current_level = GetCondJumpChainStateSpace(2)
     #print state_space_at_current_level
@@ -643,6 +652,7 @@ def GetLinearEquations(state_space_at_current_level,sigma):
             #Otherwise, keep it 0
             index_of_m1 = state_to_index_map[m1_vector[row]]
             matrix[row,index_of_m1] = prob_m1_vector[row]
+        
         if (m2_vector[row]!=(-1,-1,-1,-1)):
             #Otherwise, keep it 0
             index_of_m2 = state_to_index_map[m2_vector[row]]
@@ -654,8 +664,6 @@ def GetLinearEquations(state_space_at_current_level,sigma):
             matrix[row,index_of_s_b_arrow_t] = prob_s_b_arrow_t_vector[row]
     
     return (matrix, constant_vector)
-
-
 
 def LinearEquationSolver(A, b):
     """
@@ -942,6 +950,8 @@ def UncondProbSTTGlobal(current_state_for_uncond_probs, sigma, num_sum=20):
     """
     r_t=current_state_for_uncond_probs[1]
     alpha=sigma[3]
+    #Trivia: Note that comb changes the number from type "float" to "numpy.float64"
+    #because comb is a method of numpy class
     coefficient = 2*alpha*comb(r_t,2)
     sum=0
     for k in range(r_t,r_t+num_sum):
@@ -1499,7 +1509,7 @@ def MakeTransitionMatrixForLevel(level_number, sigma):
     When the conditional jump chain is in level k (i.e., the total
     number of lineages = k), the number of states at that level is 4(k-1) (see
     paragraph 3, page 19). Besides transitioning within level k, i.e.,
-    among its 4(k+1) states, the chain can also effect precisely one
+    among its 4(k-1) states, the chain can also effect precisely one
     transition to a state in level k-1, representing the speciation involving the two
     next_coalescing_lineages whose character states (whether 0/1) are
     represented in state_of_cond_jump_chain. We add this state as the
@@ -1507,7 +1517,7 @@ def MakeTransitionMatrixForLevel(level_number, sigma):
     
     The precise identity of this state in level k-1 does not matter. 
     All that we need is to be able calculate the probability of the 
-    above-mentioned speciation event  from each of the 4(k+1) states in level k. 
+    above-mentioned speciation event  from each of the 4(k-1) states in level k. 
     """
 
     # k is just an alias for level_number
@@ -1638,10 +1648,14 @@ def MakeTransitionMatrixForLevel(level_number, sigma):
             #If column == (-1,-1,-1,-1), which means the event
             #cannot be applied to z, then P(w|z)=0, so we don't need to 
             #fill out this entry anyhow. 
-            #Also make sure column != (,,-1,-1),that is, 
-            #when the event is "kappa". 
-            if (w_of_z != (-1,-1,-1,-1) and w_of_z[2]!=-1 and w_of_z[3]!=-1):
-                column = state_to_index_in_transition_matrix[w_of_z]
+ 
+            if (w_of_z != (-1,-1,-1,-1)):
+                #Now, if column != (,,-1,-1),that is, 
+                #when the event is "kappa", we place it in the last column
+                if(w_of_z[2]==-1 and w_of_z[3]==-1):
+                    column = 4*(k-1)
+                else: 
+                    column = state_to_index_in_transition_matrix[w_of_z]
    
             # In the numerator of the right side of Eq. 24, 
             #   1. Pr(F | w(z)) is, in terms of the program's variables,
@@ -1662,7 +1676,23 @@ def MakeTransitionMatrixForLevel(level_number, sigma):
             #   After normalization the elements in the vector should add
             #   up to 1.
             #   transition_matrix[row][column] = numerator in eqn(24)
-                transition_matrix[row][column] = solution[column] * UnconditionalTransitionProbability(w, z, sigma)
+            #    If event is kappa, place it in the last column
+                if (column == 4*(k-1)):
+                    transition_matrix[row,column] = UnconditionalTransitionProbability("kappa", z, sigma)
+                else: 
+                    transition_matrix[row,column] = solution[column] * UnconditionalTransitionProbability(w, z, sigma)
+        #Testing if sum of rows = P(F|z), really normalizing against P(F|z)
+        testing = transition_matrix[row].copy()
+        testing2 = transition_matrix[row].copy()
+        #Equal is defined in this class to test two numbers are so close
+        #they're considered "equal" - use this is b/c == is hard
+        #to apply to float numbers. 
+        assert(Equal(testing.sum(), solution[row]))
+        for j in range(len(testing)):
+            testing[j] = testing[j]/solution[row]
+        Normalize(testing2)  
+        assert(allclose(testing,testing2))
+        
         Normalize(transition_matrix[row])
     # =================================================================
     # End Task: Calculating the transition matrix using Equation 24 #
@@ -2222,10 +2252,12 @@ def SampleFromIS(G, delta, sigma, (transition_matrices, state_to_index_in_transi
     return(probability_of_history)            
 
 if __name__ == "__main__":
-    current_state_for_uncond_probs = [6,1,1,0]
-    num_sum=20
-    #sigma is defined as = (lambda, b, B, alpha, mu)
     sigma = (.01, .1, 2000, .05, .1)
-    a,b,c = MakeTransitionMatrixForLevel(2, sigma)
-    print a
-    print b
+    matrix, state_to_index_map, index_to_state_map = MakeTransitionMatrixForLevel(5, sigma)
+    #format matrix so it's more readable
+    length = len(matrix[0])
+    for i in range(length):
+        for j in range(length):
+            matrix[i,j] = float(matrix[i,j])
+    print matrix
+    print state_to_index_map
