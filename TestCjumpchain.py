@@ -156,43 +156,6 @@ class TestCjumpchain(unittest.TestCase):
         x = cjumpchain.CalculatePiStar(1001, current_state_for_uncond_probs, sigma, num_sum)
         self.assertAlmostEqual(x, 0.250000243178)
 
-    def testCalculatePiStarAgainstOld(self):
-        #test1
-        current_state_for_uncond_probs = [1000,1000]
-        num_sum=20
-        #sigma = (lambda, b, B, alpha, mu)
-        sigma = (0.1, 0.2, 2000, 0.10, 0.11)
-        x = cjumpchain.CalculatePiStar(1001, current_state_for_uncond_probs, sigma, num_sum)
-        y = cjumpchain.CalculatePiStarOldWay(1001, current_state_for_uncond_probs, sigma, num_sum)
-        self.assertAlmostEqual(x,y)
-        #test2
-        current_state_for_uncond_probs = [1000,1000]
-        num_sum=20
-        #sigma = (lambda, b, B, alpha, mu)
-        sigma=(0.1, .1, 1000, .05, .1)
-        x = cjumpchain.CalculatePiStar(1001, current_state_for_uncond_probs, sigma, num_sum)
-        y = cjumpchain.CalculatePiStarOldWay(1001, current_state_for_uncond_probs, sigma, num_sum)
-        self.assertAlmostEqual(x, y)
-
-    def testCalculatePiStarOldWay(self):
-        #test1
-        current_state_for_uncond_probs = [1000,1000]
-        num_sum=20
-        #sigma = (lambda, b, B, alpha, mu)
-        sigma = (0.1, 0.2, 2000, 0.10, 0.11)
-        x = cjumpchain.CalculatePiStarOldWay(1001, current_state_for_uncond_probs, sigma, num_sum)
-        self.assertAlmostEqual(x, 0.0965433633826)
-        #test2
-        current_state_for_uncond_probs = [1000,1000]
-        num_sum=20
-        #sigma = (lambda, b, B, alpha, mu)
-        sigma=(0.1, .1, 1000, .05, .1)
-        x = cjumpchain.CalculateLogPiStar(1150, current_state_for_uncond_probs, sigma, num_sum)
-        y = cjumpchain.CalculatePiStarOldWay(1150, current_state_for_uncond_probs, sigma, num_sum)
-        #y gives 0, whereas x gives 150.79999327173846
-        self.assertAlmostEqual(x, 150.79999327173846)
-        self.assertAlmostEqual(y,0.0)     
-
     def testLogFactorialOfNegative(self):
         x=pow(10,cjumpchain.LogFactorialOfNegative(4))
         y=4*3*2*1
@@ -227,13 +190,29 @@ class TestCjumpchain(unittest.TestCase):
         x = cjumpchain.UncondProbSBB(current_state_for_uncond_probs, sigma, num_sum)
         self.assertAlmostEqual(x, 0.024975,6)
         
-    def testUncondProbSBarrowT(self):
+    def testUncondProbSBarrowTGlobal(self):
         current_state_for_uncond_probs = [1000,1000,0,1]
         num_sum=20
         sigma = [.01, .1, 2000, .05, .1]
-        x = cjumpchain.UncondProbSBarrowT(current_state_for_uncond_probs, sigma, num_sum)
+        x = cjumpchain.UncondProbSBarrowTGlobal(current_state_for_uncond_probs, sigma, num_sum)
         self.assertAlmostEqual(x, 1.00931556086e-036,6)
     
+    def testUncondProbSBarrowTGlobal(self):
+        current_state_for_uncond_probs = [1,1,0,1]
+        num_sum=20
+        sigma = [.01, .1, 2000, .05, .1]
+        s_b_arrow_t_global = cjumpchain.UncondProbSBarrowTGlobal(current_state_for_uncond_probs, sigma, num_sum)
+        self.assertAlmostEqual(s_b_arrow_t_global, 0.799999237061)        
+        
+        #Testing sum of m_1+m_2+s_b_arrow_t = s_b_arrow_t_global
+        m_1 = cjumpchain.UncondProbM1(current_state_for_uncond_probs, sigma, num_sum)
+        m_2 = cjumpchain.UncondProbM2(current_state_for_uncond_probs, sigma, num_sum)
+        s_b_arrow_t = cjumpchain.UncondProbSBarrowT(current_state_for_uncond_probs, sigma, num_sum)
+        self.assertEqual(m_1, 0)
+        self.assertAlmostEqual(m_2, 0.799999237061)
+        self.assertEqual(s_b_arrow_t, 0)
+        self.assertEqual(m_1+m_2+s_b_arrow_t, s_b_arrow_t_global)
+        
     def testUncondProbST(self):
         current_state_for_uncond_probs = [1000,1000,0,1]
         num_sum = 20
@@ -259,6 +238,19 @@ class TestCjumpchain(unittest.TestCase):
         x = cjumpchain.ReinterpretUncondEvent("s_b_arrow_t", (2,0,0,0))
         self.assertEqual(x, "s_b_arrow_t")
     
+    def testUncondProbKappa(self):
+        current_state_for_uncond_probs = [1,1,0,1]
+        num_sum=20
+        sigma = [.01, .1, 2000, .05, .1]
+        x = cjumpchain.UncondProbKappa("s_bt", current_state_for_uncond_probs, sigma, num_sum=20)
+        self.assertAlmostEqual(x, 0.00039999961853)
+        
+        x = cjumpchain.UncondProbKappa("s_bb", current_state_for_uncond_probs, sigma, num_sum=20)
+        self.assertEqual(x,0)
+        
+        x = cjumpchain.UncondProbKappa("s_t", current_state_for_uncond_probs, sigma, num_sum=20)
+        self.assertEqual(x,0)
+
     def testUnconditionalTransitionProbability(self):
         current_state_of_cond_jump_chain = [1000,1000,1,0]
         sigma = [.01, .1, 2000, .05, .1]
