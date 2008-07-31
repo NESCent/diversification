@@ -54,8 +54,9 @@ def CombinationChoose2(list,allcomb,j):
     j=j-1     
     for i in range(j):
         allcomb.append([list[i],list[j]])
-                      
-    CombinationChoose2(list,allcomb,j)
+        CombinationChoose2(list,allcomb,j)
+
+    return -1        
     
 def LogFactorialOfNegative(z,terms=10000):
     """
@@ -554,7 +555,7 @@ def GetLinearEquations(state_space_at_current_level,sigma):
     So we can create a 4(k-1) by 4(k-1) matrix called A, 
     filled with coefficients of various P(F|z)'s in each row. 
     
-    How do we fill out matrix A? Well, there's a clever way. 
+    How do we fill out matrix A? 
     
     For instance, suppose there are 5 equations of the following format
     x_0 = 4 + 3x_1 + 11x_3 + 8x_4         
@@ -653,94 +654,7 @@ def GetLinearEquations(state_space_at_current_level,sigma):
     
     return (matrix, constant_vector)
 
-def GetLinearEquationTally(z,sigma):
-    """
-    The last element of the vector is the constant
-    """
-##first calculate the probability of speciation
-    q_t=z[0]
-    r_t=z[1]
-    level=q_t+r_t
-    state_to_index_dictionary=MakeState2IndexDictionary(level)
-    x1=z[2]
-    x2=z[3]
-    speciation=''
-    k=0
-    if ((x1==1)&(x2==0))|((x1==0)&(x2==1)):
-        speciation='s_bt'
-    if (x1==1):
-        speciation='s_tt'
-    if(x1==0):
-        speciation='s_bb'
-    k=UnconditionalTransitionProbability(speciation,z,sigma)
-##now calculate the migrations that are possible. Should I treat the probability of m1 and m2 as s_b_arrow_t?
-    vec=range(4*(level-1)+1)
-    
-    for i in range(len(vec)):
-        vec[i]=0
-        
-    vec[4*(level-1)]=k
-    
-    if(r_t==0):
-        return vec
 
-    if((x1==0)&(x2==0)):
-        next_state=(q_t+1,r_t-1,0,0)
-        index=state_to_index_dictionary(next_state)
-        probability=UnconditionalTransitionProbability('s_b_arrow_t',next_state,sigma)
-        vec[index]=probability
-    if((x1==1)&(x2==1)&(r_t!=2)):
-        next_state_1=(q_t+1,r_t-1,1,1)
-        next_state_2=(q_t+1,r_t-1,0,1)
-        next_state_3=(q_t+1,r_t-1,1,0)
-        index_1=state_to_index_dictionary[next_state_1]
-        index_2=state_to_index_dictionary[next_state_2]
-        index_3=state_to_index_dictionary[next_state_3]
-        probability_1=UnconditionalTransitionProbability('s_b_arrow_t',next_state_1,sigma)
-        probability_2=UnconditionalTransitionProbability('s_b_arrow_t',next_state_2,sigma)
-        probability_3=UnconditionalTransitionProbability('s_b_arrow_t',next_state_3,sigma)
-        vec[index_1]=probability_1
-        vec[index_2]=probability_2
-        vec[index_3]=probability_3
-    elif((x1==1)&(x2==1)&(r_t==2)):
-        next_state_2=(q_t+1,r_t-1,0,1)
-        next_state_3=(q_t+1,r_t-1,1,0)
-        index_2=state_to_index_dictionary[next_state_2]
-        index_3=state_to_index_dictionary[next_state_3]
-        probability_2=UnconditionalTransitionProbability('s_b_arrow_t',next_state_2,sigma)
-        probability_3=UnconditionalTransitionProbability('s_b_arrow_t',next_state_3,sigma)
-        vec[index_2]=probability_2
-        vec[index_3]=probability_3
-    if((x1==0)&(x2==1)&(r_t!=1)):
-        next_state_1=(q_t+1,r_t-1,0,1)
-        next_state_2=(q_t+1,r_t-1,0,0)
-        index_1=state_to_index_dictionary[next_state_1]
-        index_2=state_to_index_dictionary[next_state_2]
-        probability_1=UnconditionalTransitionProbability('s_b_arrow_t',next_state_1,sigma)
-        probability_2=UnconditionalTransitionProbability('s_b_arrow_t',next_state_2,sigma)       
-        vec[index_1]=probability_1
-        vec[index_2]=probability_2
-    elif((x1==0)&(x2==1)&(r_t==1)):
-        next_state_2=(q_t+1,r_t-1,0,0)
-        index_2=state_to_index_dictionary[next_state_2]
-        probability_2=UnconditionalTransitionProbability('s_b_arrow_t',next_state_2,sigma)       
-        vec[index_2]=probability_2
-    if((x1==1)&(x2==0)&(r_t!=1)):
-        next_state_1=(q_t+1,r_t-1,1,0)
-        next_state_2=(q_t+1,r_t-1,0,0)
-        index_1=state_to_index_dictionary[next_state_1]
-        index_2=state_to_index_dictionary[next_state_2]
-        probability_1=UnconditionalTransitionProbability('s_b_arrow_t',next_state_1,sigma)
-        probability_2=UnconditionalTransitionProbability('s_b_arrow_t',next_state_2,sigma)       
-        vec[index_1]=probability_1
-        vec[index_2]=probability_2
-    elif((x1==0)&(x1==1)&(r_t==1)):
-        next_state_2=(q_t+1,r_t-1,0,0)
-        index_2=state_to_index_dictionary[next_state_2]
-        probability_2=UnconditionalTransitionProbability('s_b_arrow_t',next_state_2,sigma)       
-        vec[index_2]=probability_2
-        
-    return (vec)
 
 def LinearEquationSolver(A, b):
     """
@@ -758,6 +672,12 @@ def LinearEquationSolver(A, b):
     vector. 
     """
     return solve(A,b)
+
+def CalculatePi(j_species,sigma):
+    log_pi=CalculateLogPi(j_species,sigma)
+    alpha = sigma[3]
+    mu = sigma[4]
+    return(pow(alpha/mu,log_pi))
     
 def CalculateLogPi(j_species, sigma):
     """
@@ -832,64 +752,6 @@ def CalculateLogPi(j_species, sigma):
     ratio2 = math.log(pow(float(1-alpha/mu),-b/alpha),alpha/mu)
     return coefficient+ratio+ratio2
 
-def CalculatePi(j_species, sigma):
-    """
-    Calculates p_j, or the probability that the equilibrium number of species equals j given
-    sigma
-    
-    Input Parameters
-    ----------------
-    @param j_species        
-                    j species; a nonnegative integer
-    @param sigma    set of all parameters for the model
-                    For the model in mossEqModel.pdf, 
-                    sigma = (lambda, b, B, alpha, mu), where 
-                    
-                    lambda is the turnover rate in state 0 (the boreal region), 
-                    b = the effective migration rate from state 0 to 1 (boreal to tropical), 
-                    B = the total number of species in state 0 (the boreal region)
-                    alpha = the per lineage speciation rate in state 1 (the neotropical region), and 
-                    mu = the per lineage extinction rate in state 1 (the neotropical region).
-    
-    Details
-    --------    
-    Only 3 components of sigma are needed:
-    alpha     sigma[3] = per species birth rate in neotropical region; positive constant
-    b         sigma[1] = migration rate
-    mu        sigma[4] = death rate of species in neotropical region when number of species is i; positive constant
-    
-    Important!! b/a+j-1 must be nonegative, so should be j
-
-    if alpha=mu, pi will be always zero, and CalculateLogPi returns -1, a flag that alpha=mu
-    
-    See CalculateLogPi for more details. 
-    
-    Note: Why we don't calculate Pi directly in this method and
-    instead use the helper method CalculateLogPi? 
-    
-    This is because when j is large, (a/u)^x is still very close to 0, 
-    however, this corrects the case when (a/u)^j is identically 0
-    but C(b/a+j-1,j) is very very large, that is, b is much greater
-    than a. In other words, when migration rate is much greater than birth
-    rate. Whereas if we just do C(b/a+j-1,j)*(a/u)^j*(1-a/u)^(-b/a), 
-    pi becomes 0 EVERYTIME j is large. 
-    
-    Overall, however, we don't ever really use CalculatePi in 
-    CalculatePiStar, we use CalculateLogPi instead. 
-    
-    Returns value
-    -------------
-    p_j = C(b/alpha + j - 1,j)*(alpha/mu)^j*(1-alpha/mu)^(-b/alpha); a float
-    if alpha=mu, -1, a flag is returned
-    """
-    alpha = sigma[3]
-    mu = sigma[4]
-    x = CalculateLogPi(j_species, sigma)
-    if (x==-1):
-        #If CalculateLogPi gives an error message, then Pi should be 0.
-        return 0.0;
-    return pow(alpha/mu, x)
-
 #I got this function from R documentation
 def LogSum(logX,logY,base):
     """
@@ -931,7 +793,7 @@ def CalculateLogPiStar(n_t, current_state_for_uncond_probs, sigma, num_sum=20):
     @param num_sum  the number of summations to be done, the upper limit of summation is r_t+num_sum
     @param sigma    set of all parameters for the model
                     sigma = (lambda, b, B, alpha, mu)
-                    See CalculatePi for more details. 
+                    See CalculateLogPi for more details. 
                     
     Details
     --------
@@ -1009,7 +871,6 @@ def CalculatePiStar(n_t, current_state_for_uncond_probs, sigma, num_sum=20):
     logPiStar = CalculateLogPiStar(n_t, current_state_for_uncond_probs, sigma, num_sum=20)
     return pow(alpha/mu,logPiStar)
 
-def CalculatePiStarOldWay(n_t, current_state_for_uncond_probs, sigma, num_sum=20):
     """
     The old way of calculating PiStar
     Note that CalculatePiStar is the "new", logarithmic way of testing
@@ -1055,13 +916,12 @@ def UncondProbSTT(current_state_for_uncond_probs, sigma, num_sum=20):
                     current_state_for_uncond_probs[1] = r_t - number of ancestral species in neotropics in sameple history at time t              
                     Only [1] = r_t is needed for this method. 
     @param num_sum  the number of summations to be done, the upper limit of summation is r_t+num_sum
-    @param sigma    set of all parameters for the model
-                    for the model in mossEqModel.pdf, sigma = (lambda, b, B, alpha, mu), where 
-                    lambda is the turnover rate, 
-                    b = the migration rate, 
+    @param sigma    sigma = (lambda, b, B, alpha, mu), where  
+                    lambda is the turnover rate in state 0 (the boreal region), 
+                    b = the effective migration rate from state 0 to 1 (boreal to tropical), 
                     B = the total number of species in state 0 (the boreal region)
-                    alpha = the speciation rate in state 1 (the neotropical region), and 
-                    mu = the extinction rates in state 1 (the neotropical region).
+                    alpha = the per lineage speciation rate in state 1 (the neotropical region), and 
+                    mu = the per lineage extinction rate in state 1 (the neotropical region).
  
     Details
     ---------
@@ -1083,7 +943,11 @@ def UncondProbSTT(current_state_for_uncond_probs, sigma, num_sum=20):
         if (k!=0):
             #In case k=0, we don't want division by 0
             sum=sum+ float(CalculatePiStar(k-1,current_state_for_uncond_probs,sigma,num_sum))/k
-    return coefficient*sum
+    r=1
+    if(r_t>1):
+        r=1/comb(r_t,2)
+    
+    return coefficient*sum*r
 
 def UncondProbSBB(current_state_for_uncond_probs, sigma, num_sum=20):
     """
@@ -1102,7 +966,7 @@ def UncondProbSBB(current_state_for_uncond_probs, sigma, num_sum=20):
                      I created this just so the method parameters are identical
     @param sigma     set of all parameters for the model
                      sigma = (lambda, b, B, alpha, mu)
-                     See uncondProbSTT for more details
+                     See UncondProbSTT for more details
                      
     Details
     --------
@@ -1118,53 +982,10 @@ def UncondProbSBB(current_state_for_uncond_probs, sigma, num_sum=20):
     q_t=current_state_for_uncond_probs[0]
     lam=sigma[0]
     B=sigma[2]
-    return 2*lam*comb(q_t,2)/(B*B)
-
-def UncondProbSBarrowTGlobal(current_state_for_uncond_probs, sigma, num_sum=20):    
-    """
-    Calculates p(S_{B->T}), the probability of migration of species 
-    from the boreal to the neotropics region when the duplicate in the
-    boreal region does NOT appear in the sample.
-    See eqn (21) in mossEqModel.pdf
-    
-    Input Parameters
-    ----------------
-    @param current_state_for_uncond_probs    
-                     [0] = q_t and [1] = r_t, see UncondProbSTT for details
-                     Both q_t and r_t are needed for this method. 
-                     Recall:
-                     q_t = number of ancestral species in boreal region in the sample
-                           history at time t
-                     r_t = number of ancestral species in the neotropics
-                           region in the sample history at time t  
-    @param num_sum  the number of summations to be done, the upper limit of summation is r_t+num_sum
-    @param sigma     set of all parameters for the model
-                     sigma = (lambda, b, B, alpha, mu)
-                     See uncondProbSTT for more details
-                
-    Details
-    --------
-    Only 4 components of sigma are needed (for instance, some are used only to call CalculatePi; they're marked with *): 
-    B        sigma[2] = the total number of species in boreal community (or state 0); an assumption
-    alpha    *sigma[3] = birth rate of species in neotropical region when the number of species is i; positive constant
-    b        **sigma[1] = migration rate (used in both methods)
-    mu       *sigma[4] = death rate of species in neotropical region when number of species is i; positive constant
-     
-    Return Value 
-    -----------_
-    Returns p(S_{B->T}) = b*r_t*(1-q_t/B)*\sum_{k>=r_t}(pi_{k-1}/k) 
-    """
-    q_t = current_state_for_uncond_probs[0]
-    r_t = current_state_for_uncond_probs[1]
-    B = sigma[2]
-    b = sigma[1]
-    coef = b*r_t*(1-float(q_t/B))
-    sum=0
-    for k in range(r_t,r_t+num_sum):
-        if (k!=0):
-            #In case k==0, we don't want divide by 0
-            sum=sum+CalculatePi(k-1,sigma)/k
-    return coef*sum 
+    r=1
+    if(q_t>1):
+        r=1/comb(q_t,2)
+    return 2*lam*comb(q_t,2)/(B*B)*r
 
 def UncondProbSBT(current_state_for_uncond_probs, sigma, num_sum=20):
     """
@@ -1195,9 +1016,9 @@ def UncondProbSBT(current_state_for_uncond_probs, sigma, num_sum=20):
     Only 4 components of sigma are needed (for instance, some are used only to call CalculatePi; they're marked with *. Those
     marked with ** are used for both CalculatePi and UncondProbSBT): 
     B        sigma[2] = the total number of species in boreal community (or state 0); an assumption
-    alpha    *sigma[3] = birth rate of species in neotropical region when the number of species is i; positive constant
-    b        **sigma[1] = migration rate (used in both methods)
-    mu       *sigma[4] = death rate of species in neotropical region when number of species is i; positive constant
+    alpha    *sigma[3] = per species birth rate of in neotropical region when the number of species is i; positive constant
+    b        **sigma[1] = effective migration rate (used in both methods)
+    mu       *sigma[4] = per species death rate in neotropical region when number of species is i; positive constant
      
     Return Value 
     -----------_
@@ -1214,9 +1035,99 @@ def UncondProbSBT(current_state_for_uncond_probs, sigma, num_sum=20):
         if (k!=0):
             #if k==0, then we don't want to divide by 0.
             sum=sum+CalculatePi(k-1,sigma)/k
-    return coef*sum  
+    r=1
+    if(r_t!=0 and q_t !=0):
+        r=1/(r_t*q_t)            
+    return coef*sum*r  
+
+def UncondProbSBarrowTGlobal(current_state_for_uncond_probs, sigma, num_sum=20):    
+    """
+    Calculates p(S_{B->T}), the probability of migration of species 
+    from the boreal to the neotropics region when the duplicate in the
+    boreal region does NOT appear in the sample.
+    See eqn (21) in mossEqModel.pdf
+    
+    Input Parameters
+    ----------------
+    @param current_state_for_uncond_probs    
+                     [0] = q_t and [1] = r_t, see UncondProbSTT for details
+                     Both q_t and r_t are needed for this method. 
+                     Recall:
+                     q_t = number of ancestral species in boreal region in the sample
+                           history at time t
+                     r_t = number of ancestral species in the neotropics
+                           region in the sample history at time t  
+    @param num_sum  the number of summations to be done, the upper limit of summation is r_t+num_sum
+    @param sigma     set of all parameters for the model
+                     sigma = (lambda, b, B, alpha, mu)
+                     See UncondProbSTT for more details
+                
+    Details
+    --------
+    Only 4 components of sigma are needed (for instance, some are used only to call CalculatePi; they're marked with *): 
+    B        sigma[2] = the total number of species in boreal community (or state 0); an assumption
+    alpha    *sigma[3] = per species birth rate of in neotropical region when the number of species is i; positive constant
+    b        **sigma[1] = effective migration rate (used in both methods)
+    mu       *sigma[4] = per species death rate of in neotropical region when number of species is i; positive constant
+     
+    Return Value 
+    -----------_
+    Returns p(S_{B->T}) = b*r_t*(1-q_t/B)*\sum_{k>=r_t}(pi_{k-1}/k) 
+    """
+    q_t = current_state_for_uncond_probs[0]
+    r_t = current_state_for_uncond_probs[1]
+    B = sigma[2]
+    b = sigma[1]
+    coef = b*r_t*(1-float(q_t/B))
+    sum=0
+    for k in range(r_t,r_t+num_sum):
+        if (k!=0):
+            #In case k==0, we don't want divide by 0
+            sum=sum+CalculatePi(k-1,sigma)/k
+    return coef*sum 
 
 def UncondProbSBarrowT(current_state_for_uncond_probs, sigma, num_sum=20):
+    """
+    Calculates p(S_{B->T}), the probability one of the not-next-coalescing-lineage's
+    migration from the boreal to the neotropics region. The lineage's duplicate in the
+    boreal region does NOT appear in the sample.
+    See eqn (21) in mossEqModel.pdf
+    
+    Input Parameters
+    ----------------
+    @param current_state_for_uncond_probs    
+                     [0] = q_t and [1] = r_t, see UncondProbSTT for details
+                     Both q_t and r_t are needed for this method. 
+                     Recall:
+                     q_t = number of ancestral species in boreal region in the sample
+                           history at time t
+                     r_t = number of ancestral species in the neotropics
+                           region in the sample history at time t  
+    @param num_sum  the number of summations to be done, the upper limit of summation is r_t+num_sum
+    @param sigma     set of all parameters for the model
+                     sigma = (lambda, b, B, alpha, mu)
+                     See uncondProbSTT for more details
+                
+    Details
+    --------
+    Only 4 components of sigma are needed (for instance, some are used only to call CalculatePi; they're marked with *): 
+    B        sigma[2] = the total number of species in boreal community (or state 0); an assumption
+    alpha    *sigma[3] = per species birth rate of in neotropical region when the number of species is i; positive constant
+    b        **sigma[1] = effective migration rate (used in both methods)
+    mu       *sigma[4] = per species death rate in neotropical region when number of species is i; positive constant
+
+    The only possible direction of migration when going backwards in time is 1->0
+
+    p(S_{B->T}) is multiplied by (r_t - 2) / r_t or r_t - 1) / r_t to reflect the ratio of lineages that could
+    undergo migration from 1->0 that are not the next coalescing lineages to all lineages that could undergo migration
+    1->0
+     
+    Return Value 
+    -----------_
+    Returns p(S_{B->T})*various coefficients
+    """
+
+
     s_b_arrow_t = UncondProbSBarrowTGlobal(current_state_for_uncond_probs, sigma, num_sum=20)
     x_1=current_state_for_uncond_probs[2]
     x_2=current_state_for_uncond_probs[3]
@@ -1230,22 +1141,94 @@ def UncondProbSBarrowT(current_state_for_uncond_probs, sigma, num_sum=20):
     if((x_1==1 and x_2==0) or (x_1==0 and x_2==1)):
         return s_b_arrow_t * (r_t - 1) / r_t
     
-def UncondProbM1(current_state_for_uncond_probs, sigma, num_sum=20):
-    s_b_arrow_t = UncondProbSBarrowTGlobal(current_state_for_uncond_probs, sigma, num_sum=20)
-    x_1=current_state_for_uncond_probs[2]
-    x_2=current_state_for_uncond_probs[3]
-    r_t=current_state_for_uncond_probs[1]
+def UncondProbM1(state_space_at_current_level, sigma, num_sum=20):
+    """
+    Calculates p(S_{B->T}), the probability one of the next-coalescing-lineage's
+    migration from the boreal to the neotropics region. The lineage's duplicate in the
+    boreal region does NOT appear in the sample.
+    See eqn (21) in mossEqModel.pdf
+    
+    Input Parameters
+    ----------------
+   
+    @param state_space_at_current_level     A list containing all the states (4-tuples) at the current level (e.g. level 5), 
+                                            really generated by the
+                                            GetCondJumpChainState(level) method
+                                            See comments in MakeTransitionMatrixForLevel
+                                            for more details.  
+    @param num_sum  the number of summations to be done, the upper limit of summation is r_t+num_sum
+    @param sigma     set of all parameters for the model
+                     sigma = (lambda, b, B, alpha, mu)
+                     See uncondProbSTT for more details
+                
+    Details
+    --------
+    Only 4 components of sigma are needed (for instance, some are used only to call CalculatePi; they're marked with *): 
+    B        sigma[2] = the total number of species in boreal community (or state 0); an assumption
+    alpha    *sigma[3] = per species birth rate of in neotropical region when the number of species is i; positive constant
+    b        **sigma[1] = effective migration rate (used in both methods)
+    mu       *sigma[4] = per species death rate in neotropical region when number of species is i; positive constant
+
+    The only possible direction of migration when going backwards in time is 1->0
+
+    p(S_{B->T}) is multiplied by 1/r_t to reflect the ratio of next coalescing lineages marked x_1 in the tuple
+    able to undergo migration to the total number of lineages in state 1
+     
+    Return Value 
+    -----------_
+    Returns p(S_{B->T})*various coefficients
+    """
+    s_b_arrow_t = UncondProbSBarrowTGlobal(state_space_at_current_level, sigma, num_sum=20)
+    x_1= state_space_at_current_level[2]
+    x_2= state_space_at_current_level[3]
+    r_t= state_space_at_current_level[1]
     if (r_t==0):
         return 0
     if(x_1==1):
         return s_b_arrow_t / r_t
     return 0
 
-def UncondProbM2(current_state_for_uncond_probs,sigma,num_sum=20):
-    s_b_arrow_t = UncondProbSBarrowTGlobal(current_state_for_uncond_probs,sigma, num_sum=20)    
-    x_1=current_state_for_uncond_probs[2]
-    x_2=current_state_for_uncond_probs[3]
-    r_t=current_state_for_uncond_probs[1]
+def UncondProbM2(state_space_at_current_level,sigma,num_sum=20):
+    """
+    Calculates p(S_{B->T}), the probability one of the next-coalescing-lineage's
+    migration from the boreal to the neotropics region. The lineage's duplicate in the
+    boreal region does NOT appear in the sample.
+    See eqn (21) in mossEqModel.pdf
+    
+    Input Parameters
+    ----------------
+   @param state_space_at_current_level     A list containing all the states (4-tuples) at the current level (e.g. level 5), 
+                                            really generated by the
+                                            GetCondJumpChainState(level) method
+                                            See comments in MakeTransitionMatrixForLevel
+                                            for more details.  
+                           region in the sample history at time t  
+    @param num_sum  the number of summations to be done, the upper limit of summation is r_t+num_sum
+    @param sigma     set of all parameters for the model
+                     sigma = (lambda, b, B, alpha, mu)
+                     See uncondProbSTT for more details
+                
+    Details
+    --------
+    Only 4 components of sigma are needed (for instance, some are used only to call CalculatePi; they're marked with *): 
+    B        sigma[2] = the total number of species in boreal community (or state 0); an assumption
+    alpha    *sigma[3] = per species birth rate of in neotropical region when the number of species is i; positive constant
+    b        **sigma[1] = effective migration rate (used in both methods)
+    mu       *sigma[4] = per species death rate in neotropical region when number of species is i; positive constant
+
+    The only possible direction of migration when going backwards in time is 1->0
+
+    p(S_{B->T}) is multiplied by 1/r_t to reflect the ratio of next coalescing lineages marked x_2 in the tuple
+    able to undergo migration to the total number of lineages in state 1
+     
+    Return Value 
+    -----------_
+    Returns p(S_{B->T})*various coefficients
+    """
+    s_b_arrow_t = UncondProbSBarrowTGlobal(state_space_at_current_level,sigma, num_sum=20)    
+    x_1= state_space_at_current_level[2]
+    x_2= state_space_at_current_level[3]
+    r_t= state_space_at_current_level[1]
     if(r_t==0):
         return 0
     if(x_2==1):
@@ -1344,14 +1327,13 @@ def UnconditionalTransitionProbability(event, current_state_of_cond_jump_chain, 
                                 mossEqModel allows only migrations of a
                                 lineage from character state 0 to character
 
-    sigma     is the set of model all parameters. 
+    @param sigma    sigma =(lambda, b, B, alpha, mu), where  
+                    lambda is the turnover rate in state 0 (the boreal region), 
+                    b = the effective migration rate from state 0 to 1 (boreal to tropical), 
+                    B = the total number of species in state 0 (the boreal region)
+                    alpha = the per lineage speciation rate in state 1 (the neotropical region), and 
+                    mu = the per lineage extinction rate in state 1 (the neotropical region).
 
-              for the model in mossEqModel.pdf, sigma = (lambda, b, B, alpha, mu), where lambda is the
-              turnover rate, b is the migration rate, B is the total number of
-              species in state 0 (the boreal region, according to
-              mossEqModel.pdf), and alpha and mu are the speciation and
-              extinction rates, respectively, in state 1 (i.e., the
-              neotropical region).
 
     
     Return value
@@ -1386,7 +1368,6 @@ def UnconditionalTransitionProbability(event, current_state_of_cond_jump_chain, 
     # n_lineages_in_state_one are the first two elements in
     # current_state_of_cond_jump_chain
     ##I fixed a typo
-        
     event = ReinterpretUncondEvent(event, current_state_of_cond_jump_chain)
     #print "ReinterpretUncond Event gives event is: " + str(event)
  
@@ -1423,9 +1404,7 @@ def UnconditionalTransitionProbability(event, current_state_of_cond_jump_chain, 
         # methods have the same parameters. Also, 
         # num_sum=20 is already defined but is added for clarity. 
         uncond_rate = dictionary_event_to_function[e](current_state_of_cond_jump_chain, sigma, num_sum=20)
-        #print "uncond_rate for event " + str(e) + " is: " + str(uncond_rate)
         dictionary_event_to_instantaneous_rate[e] = uncond_rate
-        #print "event now is: " + str(e) + "; and uncond_rate is: "+ str(uncond_rate)
         sum_of_rates += uncond_rate
     #print "sum of rates is: " + str(sum_of_rates)
     #print "kappa is: " + str(event) + "; and its rate is: " + str(dictionary_event_to_instantaneous_rate[event])
