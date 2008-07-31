@@ -1700,26 +1700,6 @@ def MakeTransitionMatrixForLevel(level_number, sigma):
     #Note that last row of transition_matrix is always 0, b/c we don't
     #even touch it! 
     return((transition_matrix, state_to_index_in_transition_matrix, index_in_transition_matrix_to_state))
-        
-def PickNextStateofChain(row_of_transition_matrix):
-    """
-    """
-    return((0, 0.0))
-
-def WhetherInTheSameLevel(state1, state2):
-    """
-    """
-    return(False)
-
-def ChooseLineageandUpdateDelta(current_delta):
-    """
-    """
-    return(None)
-
-def MovetoNextLevel(current_delta, current_level, next_level):
-    """
-    """
-    return(())
 
 def Normalize(row):
     """
@@ -1743,6 +1723,26 @@ def Normalize(row):
     for i in range(len(row)):
         row[i] = float(row[i])/sum
     return row
+        
+def PickNextStateofChain(row_of_transition_matrix):
+    """
+    """
+    return((0, 0.0))
+
+def WhetherInTheSameLevel(state1, state2):
+    """
+    """
+    return(False)
+
+def ChooseLineageandUpdateDelta(current_delta):
+    """
+    """
+    return(None)
+
+def MovetoNextLevel(current_delta, current_level, next_level):
+    """
+    """
+    return(())
 
 def GetInitialStatesofLineages(delta):
     """
