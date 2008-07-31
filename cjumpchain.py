@@ -1487,7 +1487,7 @@ def MakeTransitionMatrixForLevel(level_number, sigma):
 
     a 3-tuple: (transition_matrix, state_to_index_in_transition_matrix, index_in_transition_matrix_to_state)
     
-    transition_matrix                       4(k+1)+1 x 4(k+1)+1 matrix of floats, where 
+    transition_matrix                       4(k-1)+1 x 4(k-1)+1 matrix of floats, where 
                                             k = level number
 
     state_to_index_in_transition_matrix     is a map from the states of the
@@ -1593,10 +1593,6 @@ def MakeTransitionMatrixForLevel(level_number, sigma):
     # i-th element of the vector is the coefficient of the unknown z_i,
     # and the last element is the constant in the equation. 
     matrix,b = GetLinearEquations(state_space_at_the_current_level, sigma)
-        
-    # May be we can use an equation solver from scipy? 
-    # In any case, solution *must* be a vector of length 4(k+1), such that
-    # solution[j] = Pr(F | z) where z = state_space_at_the_current_level[j]
     solution = LinearEquationSolver(matrix, b)
     # ======================================================================
     # End Task: Solving the system of equations represented by Equation 25 #
@@ -1658,7 +1654,7 @@ def MakeTransitionMatrixForLevel(level_number, sigma):
                     column = state_to_index_in_transition_matrix[w_of_z]
    
             # In the numerator of the right side of Eq. 24, 
-            #   1. Pr(F | w(z)) is, in terms of the program's variables,
+            #   1. Pr(F | w(z)) is in terms of the program's variables,
             #      solution[column], since
             #           a. solution[j] = Pr(F | z) where z = state_space_at_the_current_level[j] 
             #           b. state_to_index_in_transition_matrix[w_of_z] = column, 
