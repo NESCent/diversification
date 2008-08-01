@@ -62,7 +62,7 @@ p_mu = 0.11
 
 sigma = (p_lambda, p_b, p_B, p_alpha, p_mu)
 
-tree_file = sys.argv[1]
+#tree_file = sys.argv[0]
 
 trees_block = False
 states_block = False
@@ -82,7 +82,7 @@ state_table = {}
 taxa_block = False
 states_block = False
 
-TREE_FILE = open(tree_file, "r")
+TREE_FILE = open('validStrings.nex', "r")
 
 for line in TREE_FILE.readlines():
     # skip if line contains just whitespaces

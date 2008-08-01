@@ -132,7 +132,9 @@ class Level:
         self.begin_node = None
         self.end_node = None
         self.event_history = []                                     
-
+    
+    def __str__(self):
+        return lineages
 
 class Node:
     """The class description of a node in a tree
@@ -221,6 +223,9 @@ class Node:
         self.bifurcation_age = 0.0
         self.parent_age = 0.0
 
+    def __repr__(self):
+        return self.label
+        
 # Tally & Perry: Ignore the following class definition.
 
 # class definition begins.        

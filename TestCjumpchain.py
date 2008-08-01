@@ -336,7 +336,16 @@ class TestCjumpchain(unittest.TestCase):
         #solution = cjumpchain.LinearEquationSolver(A,b)
         #for row in range(len(matrix[0])-1):
             #self.assertEqual(matrix[row].sum(), solution[row])
-                                             
+    
+    def testGetInitialStatesofLineages(self):
+        delta = {1:0,2:1,3:1,4:1}
+        x,y = cjumpchain.GetInitialStatesofLineages(delta)
+        self.assertEqual((x,y), (1,3))
+        
+        delta = {1:0, 2:1, 3:0, 4:1, 5:1, 6:0, 7:0, 8:0}
+        x,y = cjumpchain.GetInitialStatesofLineages(delta)
+        self.assertEqual((x,y), (5,3))
+                                                 
 if __name__ == '__main__':
     suite = unittest.TestLoader().loadTestsFromTestCase(TestCjumpchain)
     unittest.TextTestRunner(verbosity=2).run(suite)

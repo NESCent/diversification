@@ -1727,8 +1727,12 @@ def PickNextStateofChain(row_of_transition_matrix):
 
 def WhetherInTheSameLevel(state1, state2):
     """
+    Test if state1 and state 2 are in the same level, where level is 
+    defined as the portion between two bifurcation events
     """
-    return(False)
+    if state1[0]+state1[1] != state2[0]+state2[1]:
+        return False
+    return True
 
 def ChooseLineageandUpdateDelta(current_delta):
     """
@@ -1763,7 +1767,13 @@ def GetInitialStatesofLineages(delta):
     # function to be implemented. Basically go through delta and calculate
     # the number of lineages in state_0 and the number of lineages in state
     # 1.
-    
+    n_lineages_in_state_zero = 0
+    n_lineages_in_state_one = 0
+    for i in delta:
+        if delta[i] == 0:
+            n_lineages_in_state_zero = n_lineages_in_state_zero + 1 
+        if delta[i] == 1:
+            n_lineages_in_state_one = n_lineages_in_state_one + 1        
     return(n_lineages_in_state_zero, n_lineages_in_state_one)
 
 
@@ -2247,13 +2257,117 @@ def SampleFromIS(G, delta, sigma, (transition_matrices, state_to_index_in_transi
 
     return(probability_of_history)            
 
+def PrepareTree():
+    n1 = Node()
+    n1.children = []
+    n1.all_leaves = []
+    n1.partial_order = []
+    n1.num_leaves = 0
+    n1.label = "node1"
+    
+    n2 = Node()
+    n2.children = []
+    n2.all_leaves = []
+    n2.partial_order = []
+    n2.num_leaves = 0
+    n2.label = "node2"
+   
+    n3 = Node()
+    n3.children = []
+    n3.all_leaves = []
+    n3.partial_order = []
+    n3.num_leaves = 0
+    n3.label = "node3"
+    
+    n4 = Node()
+    n4.children = []
+    n4.all_leaves = []
+    n4.partial_order = []
+    n4.num_leaves = 0
+    n4.label = "node4"
+    
+    n5 = Node()
+    n5.children = [n3]
+    n5.all_leaves = [n3]
+    n5.partial_order = [n3]
+    n5.num_leaves = 1
+    n5.label = "node5"
+    
+    n6 = Node()
+    n6.children = [n5,n4]
+    n6.all_leaves = [n3,n4,n5]
+    n6.partial_order = [n3,n4,n5]
+    n6.num_leaves = 3
+    n6.label = "node6"
+   
+    n7 = Node()
+    n7.children = [n2]
+    n7.all_leaves = [n2]
+    n7.partial_order = [n2]
+    n7.num_leaves = 1
+    n7.label = "node7"
+    
+    n8 = Node()
+    n8.children = [n1,n7]
+    n8.all_leaves = [n1,n2,n7]
+    n8.partial_order = [n1,n2,n7]
+    n8.num_leaves = 3
+    n8.label = "node8"
+    
+    n9 = Node()
+    n9.children = [n8,n6]
+    n9.all_leaves = [n1,n2,n3,n4,n5,n6,n7,n8]
+    n9.partial_order = [n1,n2,n3,n4,n5,n6,n7,n8]
+    n9.num_leaves = 8
+    n9.label = "node9"
+    
+    n1.parent = n8
+    n2.parent = n7
+    n3.parent = n5
+    n4.parent = n6
+    n5.parent = n6
+    n6.parent = n9
+    n7.parent = n8
+    n8.parent = n9
+    n9.parent = None
+    
+    l1 = Level()
+    l1.lineages = [n9]
+    l1.begin_node = n9
+    l1.end_node = None
+    l1.event_history = []
+    
+    l2 = Level()
+    l2.lineages = [n6,n8]
+    l2.begin_node = n8
+    l2.end_node = n9
+    l2.event_history = []
+    
+    l3 = Level()
+    l3.lineages = [n1,n6,n7]
+    l3.begin_node = n6
+    l3.end_node = n8
+    l3.event_history = []
+    
+    l4 = Level()
+    l4.lineages = [n1,n2,n3,n4,n5]
+    l4.begin_node = n1
+    l4.end_node = n6
+    l4.event_history = []
+    
+    levels = [l4,l3,l2,l1]
+    
+    x = Tree()
+    x.all_leaves = [n1,n2,n3,n4,n5,n6,n7,n8,n9]
+    x.partial_order = [n1,n2,n3,n4,n5,n6,n7,n8,n9]
+    x.height = 2
+    x.num_leaves = 9
+    x.root = n9
+    x.name = "MyTree"
+    x.levels = levels
+    
+    return x
+    
 if __name__ == "__main__":
-    sigma = (.01, .1, 2000, .05, .1)
-    matrix, state_to_index_map, index_to_state_map = MakeTransitionMatrixForLevel(5, sigma)
-    #format matrix so it's more readable
-    length = len(matrix[0])
-    for i in range(length):
-        for j in range(length):
-            matrix[i,j] = float(matrix[i,j])
-    print matrix
-    print state_to_index_map
+    t = PrepareTree()
+    print t.all_leaves
