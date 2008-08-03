@@ -686,8 +686,7 @@ def CalculatePi(j_species,sigma):
     log_pi=CalculateLogPi(j_species,sigma)
     alpha = sigma[3]
     mu = sigma[4]
-    if (log_pi == -1):
-        #Tally: look at CalculateLogPi to see why this is needed. 
+    if (log_pi == -1): 
         return 0
     return(pow(alpha/mu,log_pi))
     
@@ -755,7 +754,10 @@ def CalculateLogPi(j_species, sigma):
     mu = sigma[4]
     if (alpha >= mu):
         return -1
-    combination = float(comb(b/alpha+j_species-1,j_species, exact=0))
+    if(b<alpha):
+        combination= float(CombOfNegative(b/alpha+j_species-1,j_species, exact=0))
+    else:
+        combination = float(comb(b/alpha+j_species-1,j_species, exact=0))
     if (combination == 0):
         #math.log(0,something) is undefined, so just return -1 for error
         return -1
@@ -925,8 +927,8 @@ def UncondProbSTTGlobal(current_state_for_uncond_probs, sigma, num_sum=20):
     ----------------
     @param current_state_for_uncond_probs    
                     the current state for unconditional probability
-                    current_state_for_uncond_probs[0] = q_t - number of ancestral species in boreal in sample history at time t
-                    current_state_for_uncond_probs[1] = r_t - number of ancestral species in neotropics in sameple history at time t              
+                    current_state_for_uncond_probs[0] = q_t 
+                    current_state_for_uncond_probs[1] = r_t              
                     Only [1] = r_t is needed for this method. 
     @param num_sum  the number of summations to be done, the upper limit of summation is r_t+num_sum
     @param sigma    sigma = (lambda, b, B, alpha, mu), where  
@@ -1033,8 +1035,7 @@ def UncondProbSBTGlobal(current_state_for_uncond_probs, sigma, num_sum=20):
     -----------_
     Returns p{S_{BT} | n_t,q_t,r_t} = b*r_t*q_t/B * \sum_{k>=r_t}(pi_{k-1}/k)
     """    
-    q_t=current_state_for_uncond_probs[0]
-    r_t=current_state_for_uncond_probs[1]
+    q_t=current_state_for_uncond_probs[0] 
     B=sigma[2]
     b=sigma[1]
     
