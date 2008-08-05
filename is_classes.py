@@ -222,6 +222,7 @@ class Node:
         self.brlen = 0.0
         self.bifurcation_age = 0.0
         self.parent_age = 0.0
+        self.index = 0 #a numerical representation of node. so node1 is represented as "1", for instance
 
     def __repr__(self):
         return self.label

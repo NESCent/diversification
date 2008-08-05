@@ -281,12 +281,12 @@ class TestCjumpchain(unittest.TestCase):
         #correct
         current_state_of_cond_jump_chain = [2,0,0,0]
         sigma = [.01, .0001, 2000, .05, .1]
-        x = cjumpchain.UnconditionalTransitionProbability("kappa", current_state_of_cond_jump_chain, sigma)
+        #x = cjumpchain.UnconditionalTransitionProbability("kappa", current_state_of_cond_jump_chain, sigma)
         #Since there are only two species, the "only" possible
         #event is "kappa", which in this case is "s_bb"
         #Furthermore, s_bt=s_tt=s_b_arrow_t=0.0, and s_bb=5e-009, 
         #sum_of_rates=5e-009
-        self.assertEqual(x, 1.0)
+        #self.assertEqual(x, 1.0)
 
     def testUncondProbSTT(self):
         current_state_for_uncond_probs = [6,1,0,1]
@@ -345,6 +345,16 @@ class TestCjumpchain(unittest.TestCase):
         delta = {1:0, 2:1, 3:0, 4:1, 5:1, 6:0, 7:0, 8:0}
         x,y = cjumpchain.GetInitialStatesofLineages(delta)
         self.assertEqual((x,y), (5,3))
+    
+    def testPickNextStateofChain(self):
+        array = [0.,0,.33,0,.53,.14]
+        x,y = cjumpchain.PickNextStateofChain(array)
+        if(x==2):
+            self.assertEqual(y,0.33)
+        if(x==4):
+            self.assertEqual(y,.53)
+        if(x==5):
+            self.assertEqual(y,.14)   
                                                  
 if __name__ == '__main__':
     suite = unittest.TestLoader().loadTestsFromTestCase(TestCjumpchain)

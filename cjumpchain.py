@@ -16,10 +16,10 @@ from is_classes import Level
 from is_classes import Tree
 from is_classes import Node
 from levels import DemarcateLevels
-from numpy import sum, zeros, eye, array, allclose
-from scipy.misc import comb
-from scipy.misc import factorial
+from numpy import *           #sum, zeros, eye, array, allclose
+from scipy.misc import * #comb, factorial 
 from scipy.linalg import solve
+import random
 import sys
 import math
 
@@ -1036,6 +1036,7 @@ def UncondProbSBTGlobal(current_state_for_uncond_probs, sigma, num_sum=20):
     Returns p{S_{BT} | n_t,q_t,r_t} = b*r_t*q_t/B * \sum_{k>=r_t}(pi_{k-1}/k)
     """    
     q_t=current_state_for_uncond_probs[0] 
+    r_t = current_state_for_uncond_probs[1]
     B=sigma[2]
     b=sigma[1]
     
@@ -1720,31 +1721,52 @@ def Normalize(row):
     for i in range(len(row)):
         row[i] = float(row[i])/sum
     return row
+
+def MakeTransitionMatricesbyLevels(G, delta, sigma):
+    """
+    Makes transition matrices, one for each level for the input tree, for
+    the conditional jump chain described in Section 5.3.
+
+    Input parameters
+    ----------------
+    
+    G, delta, sigma         see function LikelihoodOfParameters
+
+    Return value
+    ------------
+
+    A 3-tuple:
+    (transition_matrices, state_to_index_in_transition_matrices, index_in_transition_matrices_to_state)
+   
+    transition_matrices[k] should contain the transition matrix for
+    level n-k, where n is the number of leaves in G, and 0 <= k <= n-1
+    (A level is the portion of G between two
+    speciation events.) 
+
+    state_to_index_in_transition_matrices[k] is a dictionary for level
+    n-k, which maps each state (of the jump chain) in level k to its index
+    in that level's transition matrix.
+   
+    index_in_transition_matrices_to_state[k] is the reverse map of
+    state_to_index_in_transition_matrices[k]
+    """
+
+    # level numbers range from k, ...., 2, 1
+    n_leaves = G.num_leaves()
+    
+    transition_matrices = []
+    state_to_index_in_transition_matrices = []
+    index_in_transition_matrices_to_state = []
+
+    # range(n_leaves, 1, -1) is [n_leaves, n_leaves-1, ..., 2]
+    for j in range(n_leaves, 1, -1):
+        (x, y, z) = MakeTransitionMatrixForLevel(j, sigma)
+        transition_matrices.append(x)
+        state_to_index_in_transition_matrices.append(y)
+        index_in_transition_matrices_to_state.append(z)
+
+    return((transition_matrices, state_to_index_in_transition_matrices, index_in_transition_matrices_to_state))        
         
-def PickNextStateofChain(row_of_transition_matrix):
-    """
-    """
-    return((0, 0.0))
-
-def WhetherInTheSameLevel(state1, state2):
-    """
-    Test if state1 and state 2 are in the same level, where level is 
-    defined as the portion between two bifurcation events
-    """
-    if state1[0]+state1[1] != state2[0]+state2[1]:
-        return False
-    return True
-
-def ChooseLineageandUpdateDelta(current_delta):
-    """
-    """
-    return(None)
-
-def MovetoNextLevel(current_delta, current_level, next_level):
-    """
-    """
-    return(())
-
 def GetInitialStatesofLineages(delta):
     """
     returns (#lineages in state 0, #lineages in state 1) based on what's in
@@ -1846,56 +1868,171 @@ def GetInitialStateofCondJumpChain(G, delta):
     # lineages.
     [next_coalescing_lineages_1, next_coalescing_lineages_2] = G.levels[0].end_node.children
 
-    state_of_next_coalescing_lineages_1 = delta[next_coalescing_lineages_1]
-    state_of_next_coalescing_lineages_2 = delta[next_coalescing_lineages_2]
+    #In this new implementation, next_coalescing_lineage_1 is of 
+    #class Node, so to get the index, we need to do next_coalescing_lineage_1.index
+    state_of_next_coalescing_lineages_1 = delta[next_coalescing_lineages_1.index]
+    state_of_next_coalescing_lineages_2 = delta[next_coalescing_lineages_2.index]
 
     return((n_lineages_in_state_zero, n_lineages_in_state_one, state_of_next_coalescing_lineages_1, state_of_next_coalescing_lineages_2))
-
-def MakeTransitionMatricesbyLevels(G, delta, sigma):
-    """
-    Makes transition matrices, one for each level for the input tree, for
-    the conditional jump chain described in Section 5.3.
-
-    Input parameters
-    ----------------
-    
-    G, delta, sigma         see function LikelihoodOfParameters
-
-    Return value
-    ------------
-
-    A 3-tuple:
-    (transition_matrices, state_to_index_in_transition_matrices, index_in_transition_matrices_to_state)
-   
-    transition_matrices[k] should contain the transition matrix for
-    level n-k, where n is the number of leaves in G, and 0 <= k <= n-1
-    (A level is the portion of G between two
-    speciation events.) 
-
-    state_to_index_in_transition_matrices[k] is a dictionary for level
-    n-k, which maps each state (of the jump chain) in level k to its index
-    in that level's transition matrix.
-   
-    index_in_transition_matrices_to_state[k] is the reverse map of
-    state_to_index_in_transition_matrices[k]
-    """
-
-    # level numbers range from k, ...., 2, 1
-    n_leaves = G.num_leaves()
-    
-    transition_matrices = []
-    state_to_index_in_transition_matrices = []
-    index_in_transition_matrices_to_state = []
-
-    # range(n_leaves, 1, -1) is [n_leaves, n_leaves-1, ..., 2]
-    for j in range(n_leaves, 1, -1):
-        (x, y, z) = MakeTransitionMatrixForLevel(j, sigma)
-        transition_matrices.append(x)
-        state_to_index_in_transition_matrices.append(y)
-        index_in_transition_matrices_to_state.append(z)
-
-    return((transition_matrices, state_to_index_in_transition_matrices, index_in_transition_matrices_to_state))        
         
+def PickNextStateofChain(row_of_transition_matrix):
+    """
+    Pick the index of next state from a row of transition matrix, along with its
+    probability of transition (which is really row_of_transition_matrix[x])
+    
+    For instance, if the row_of_transition_matrix is [0,0,.33,0,.54,.12]
+    then a possible output is (4,.54). Another possible output is (.33,2)
+    """
+    #Got the idea from http://snippets.dzone.com/posts/show/732
+    #Randomly choose next state based on their weights. For instance, 
+    #array = [0,0,.33,0,.54,.12] would have weights 0<=x<-.33 corrspond to 
+    #array[2], .33<=x<.88 correspond to array[4], and .88<=x<1 corresponds 
+    #to array[5]
+    n = random.uniform(0,1)
+    for i in range(len(row_of_transition_matrix)): 
+        if (n < row_of_transition_matrix[i]):
+            return (i, row_of_transition_matrix[i])
+        n = n - row_of_transition_matrix[i]
+
+def WhetherInTheSameLevel(state1, state2):
+    """
+    Test if state1 and state 2 are in the same level, where level is 
+    defined as the portion between two bifurcation events
+    """
+    if state1[0]+state1[1] != state2[0]+state2[1]:
+        return False
+    return True
+
+def MigrationType(z1, z2):
+    """
+    Identify migration type from z1 to z2. Return whether it's
+    "m_1", "m_2', or "smaller_s_b_arrow_t"
+    
+    Precondition: Assumes z1 and z2 are in same level. 
+    """
+    ret = ""
+    if (z1[2]==z2[2] and z1[3]==z2[3]):
+        ret = "smaller_s_b_arrow_t"
+    if (z1[2]==z2[2] and z1[3]!=z2[3]):
+        ret = "m_2"
+    if (z1[2]!=z2[2] and z1[3]==z2[3]):
+        ret = "m_1"
+    return ret
+
+def ChooseLineageandUpdateDelta(G, level_number, migration_type, current_delta):
+    """
+    Update current_delta based on migration_type, which could 
+    be "m_1", "m_2", "smaller_s_b_arrow_t". Also return which lineage
+    to migrate. 
+    
+    Need to know also the next-coalescing lineages. 
+    Say level is at 5, and next-coalescing lineages are in species 3 and 4
+    So say delta=[1,1,0,1,1] and migration_type is "m_2", then 
+    this method should change delta to [1,1,0,1,0], and return 4, since 
+    4th lineage is the lineage to migrate. 
+    """
+    #This returns the "indices" of the next_colalescing_lineages
+    #remember "level_number" is really calculated backwards in G.levels
+    #where G[0] is the most recent level, and G[n-1] is the first level
+    next_coalescing_lineages = G.levels[G.num_leaves - level_number].end_node.children 
+    if (migration_type =="m_1"):
+        lineage1 = next_coalescing_lineages[0].index
+        #migration always goes from 1 --> 0 backwards in time
+        if (current_delta[lineage1] ==1):
+            current_delta[lineage1] = 0 
+            return lineage1
+    if (migration_type=="m_2"):
+        lineage2 = next_coalescing_lineages[1].index
+        if (current_delta[lineage2] ==1):
+            #technically this if statement is not needed b/c it has to be 1
+            #but just to make sure anyway
+            current_delta[lineage2] = 0
+            return lineage2
+    if (migration_type=="smaller_s_b_arrow_t"):
+        #need to randomly pick lineages whose deltas==1 to migrate, EXCLUDING
+        #those involving next_coalescing_lineages. 
+        #So first delete next_coalescing_lineages from consideration
+        random_list = []
+        for i in range(len(current_delta)):
+            if (i != next_coalescing_lineages[0].index and i != next_coalescing_lineages[1].index):
+                random_list.append(i)
+        #so in our example, newlist becomes [0,1] b/c besides
+        #the next_coalescing_lineages 3 and 4, lineages 0 and 1 would
+        #fall into "smaller_s_b_arrow_t"
+        #We now "randomly shuffle" it and select the first element, that's
+        #where we want to migrate to
+        #print "before shuffling: " + str(random_list)
+        random.shuffle(random_list)
+        #print "after shuffling: " + str(random_list)
+        #update current_delta first
+        lineage_to_migrate = random_list[0]
+        if (current_delta[lineage_to_migrate] == 1): 
+            #the if statement is really redundant
+            current_delta[lineage_to_migrate] = 0
+        return random_list[0]
+
+def MovetoNextLevel(current_state, current_delta, current_level, next_level):
+    """
+    (a) update current_delta, 
+    (b) return the initial state for the next level's conditional jump chain
+        recall this has to be a kappa event.
+    (c) initialize the event history for the next level with the updated delta
+    
+    Input parameters
+    -----------------
+    current_delta         is a list of of character states (boreal or tropical)
+    current_level         is the of class Level
+    next_level            is also of class Level
+    
+    Say next-coalescing lineages are 3 and 4. 
+    Say delta = [1,1,0,1,1], and current_level=5, next_level=4. 
+    The updated delta should be [1,1,0,1] b/c 3 and 4 converge. 
+    
+    Now when kappa happens to (1,4,1,1), it becomes 
+    (1,3,-1,-1), the last two elements are -1 b/c we don't know what are
+    "its" next-coelescing lineages. But if we have the tree, we would know: 
+    it's just G.levels[num_leaves - (level_number - 1)].end_node.children
+    """
+    q_t = current_state[0]
+    r_t = current_state[1]
+    x_1 = current_state[2]
+    x_2 = current_state[3]
+    current_x_1_node = current_level.end_node.children[0]
+    current_x_2_node = current_level.end_node.children[1]
+    next_x_1_node = next_level.end_node.children[0]
+    next_x_2_node = next_level.end_node.children[1]     
+    
+    
+    current_x_1 = current_delta[current_x_1_node.index]
+    current_x_2 = current_delta[current_x_2_node.index]
+    #Say current_delta = [1,1,0,1,1], need to update it to [1,1,0,1]
+    #by the above example
+    #Determine where to add, call it add_index
+    del current_delta[current_x_1_node.index]
+    add_index = 0
+    if (current_x_2_node.index > current_x_1_node.index):
+        del current_delta[current_x_2_node.index-1]
+        add_index = current_x_1_node.index
+    else: 
+        del current_delta[current_x_2_node.index]
+        add_index = current_x_2_node.index
+    
+            
+    if (x_1==0 and x_2==0):
+        current_delta.insert(add_index,0)
+        if (q_t >= 1):
+            return (q_t-1, r_t, next_x_1_node.index, next_x_2_node.index)
+    if (x_1==1 and x_2==1):
+        current_delta.insert(add_index,1)
+        if (r_t >= 1):
+            return (q_t, r_t-1, next_x_1_node.index, next_x_2_node.index)    
+    if ((x_1==1 and x_2==0) or(x_1==0 and x_2==1)):
+        current_delta.insert(add_index,0)
+        #(1,0) --> 0 so r_t decreases by 1
+        if (r_t >=1):
+            return (q_t, r_t-1, next_x_1_node.index, next_x_2_node.index)
+    
+    #Need to update delta
 
 def SampleFromIS(G, delta, sigma, (transition_matrices, state_to_index_in_transition_matrices, index_in_transition_matrices_to_state)):
     """
@@ -2215,7 +2352,9 @@ def SampleFromIS(G, delta, sigma, (transition_matrices, state_to_index_in_transi
                 # migrates. The function should choose one lineage
                 # uniformly at random among
                 # all lineages that *could* migrate and return it.
-                migrating_lineage = ChooseLineageandUpdateDelta(current_delta)
+                migration_type = MigrationType(state_of_cond_jump_chain, next_state_of_cond_jump_chain)
+                migrating_lineage = ChooseLineageandUpdateDelta(G, curren_level_number, migration_type, current_delta)
+                
                 current_level.event_history.append(migrating_lineage)
                 
                 # updating the state of the chain.
@@ -2259,12 +2398,23 @@ def SampleFromIS(G, delta, sigma, (transition_matrices, state_to_index_in_transi
     return(probability_of_history)            
 
 def PrepareTree():
+    #G.levels[0].end_node is the parent of the first two coalescing
+    # lineages.
+    n0 = Node()
+    n0.children = []
+    n0.all_leaves = []
+    n0.partial_order = []
+    n0.num_leaves = 0
+    n0.label = "node0"
+    n0.index = 0
+    
     n1 = Node()
     n1.children = []
     n1.all_leaves = []
     n1.partial_order = []
     n1.num_leaves = 0
     n1.label = "node1"
+    n1.index = 1
     
     n2 = Node()
     n2.children = []
@@ -2272,103 +2422,109 @@ def PrepareTree():
     n2.partial_order = []
     n2.num_leaves = 0
     n2.label = "node2"
-   
+    n2.index = 2
+    
     n3 = Node()
     n3.children = []
     n3.all_leaves = []
     n3.partial_order = []
     n3.num_leaves = 0
     n3.label = "node3"
+    n3.index = 3
     
     n4 = Node()
-    n4.children = []
-    n4.all_leaves = []
-    n4.partial_order = []
-    n4.num_leaves = 0
+    n4.children = []    #n4 migrats to n2, so n2 is not considered its child
+    n4.all_leaves = [n2]
+    n4.partial_order = [n2]
+    n4.num_leaves = 1
     n4.label = "node4"
+    n4.index = 4
     
     n5 = Node()
-    n5.children = [n3]
-    n5.all_leaves = [n3]
-    n5.partial_order = [n3]
-    n5.num_leaves = 1
+    n5.children = [n2,n3]     #n5's children are n2 and n3 b/c only speciation lineages are children
+    n5.all_leaves = [n2,n3,n4]   #n5 migrates to n4 before becoming n2
+    n5.partial_order = [n2,n3,n4]
+    n5.num_leaves = 3
     n5.label = "node5"
-    
-    n6 = Node()
-    n6.children = [n5,n4]
-    n6.all_leaves = [n3,n4,n5]
-    n6.partial_order = [n3,n4,n5]
-    n6.num_leaves = 3
-    n6.label = "node6"
+    n5.index = 5
    
+    n6 = Node()
+    n6.children = []
+    n6.all_leaves = [n1]
+    n6.partial_order = [n1]
+    n6.num_leaves = 1
+    n6.label = "node6"
+    n6.index = 6
+    
     n7 = Node()
-    n7.children = [n2]
-    n7.all_leaves = [n2]
-    n7.partial_order = [n2]
-    n7.num_leaves = 1
+    n7.children = [n0,n1]
+    n7.all_leaves = [n0,n1,n6]
+    n7.partial_order = [n0,n1,n6]
+    n7.num_leaves = 3
     n7.label = "node7"
+    n7.index = 7
     
     n8 = Node()
-    n8.children = [n1,n7]
-    n8.all_leaves = [n1,n2,n7]
-    n8.partial_order = [n1,n2,n7]
-    n8.num_leaves = 3
+    n8.children = [n7,n5]
+    n8.all_leaves = [n0,n1,n2,n3,n4,n5,n6,n7]
+    n8.partial_order = [n0,n1,n2,n3,n4,n5,n6,n7]
+    n8.num_leaves = 8
     n8.label = "node8"
+    n8.index = 8
     
-    n9 = Node()
-    n9.children = [n8,n6]
-    n9.all_leaves = [n1,n2,n3,n4,n5,n6,n7,n8]
-    n9.partial_order = [n1,n2,n3,n4,n5,n6,n7,n8]
-    n9.num_leaves = 8
-    n9.label = "node9"
-    
-    n1.parent = n8
-    n2.parent = n7
+    n0.parent = n7
+    n1.parent = n7
+    n2.parent = n5
     n3.parent = n5
-    n4.parent = n6
-    n5.parent = n6
-    n6.parent = n9
+    n4.parent = n5
+    n5.parent = n8
+    n6.parent = n7
     n7.parent = n8
-    n8.parent = n9
-    n9.parent = None
+    n8.parent = None
     
-    l1 = Level()
-    l1.lineages = [n9]
-    l1.begin_node = n9
-    l1.end_node = None
+    l1 = Level()              #actually level 0
+    l1.lineages = [n8]
+    l1.begin_node = n8
+    l1.end_node = None      #the parent of the next-coalescing lilneages
     l1.event_history = []
     
     l2 = Level()
-    l2.lineages = [n6,n8]
-    l2.begin_node = n8
-    l2.end_node = n9
+    l2.lineages = [n5,n7]
+    l2.begin_node = n7
+    l2.end_node = n8
     l2.event_history = []
     
     l3 = Level()
-    l3.lineages = [n1,n6,n7]
-    l3.begin_node = n6
-    l3.end_node = n8
+    l3.lineages = [n0,n5,n6]
+    l3.begin_node = n5
+    l3.end_node = n7
     l3.event_history = []
     
-    l4 = Level()
-    l4.lineages = [n1,n2,n3,n4,n5]
-    l4.begin_node = n1
-    l4.end_node = n6
+    l4 = Level()             #the most recent level, aka the tips
+    l4.lineages = [n0,n1,n2,n3,n4]
+    l4.begin_node = n0
+    l4.end_node = n5
     l4.event_history = []
     
-    levels = [l4,l3,l2,l1]
+    levels = [l4,l3,l2,l1] #so levels[0] is the most recent level, aka the tips
     
     x = Tree()
-    x.all_leaves = [n1,n2,n3,n4,n5,n6,n7,n8,n9]
-    x.partial_order = [n1,n2,n3,n4,n5,n6,n7,n8,n9]
+    x.all_leaves = [n0,n1,n2,n3,n4,n5,n6,n7,n8]
+    x.partial_order = [n0,n1,n2,n3,n4,n5,n6,n7,n8]
     x.height = 2
-    x.num_leaves = 9
-    x.root = n9
+    x.num_leaves = 4
+    x.root = n8
     x.name = "MyTree"
     x.levels = levels
     
     return x
     
 if __name__ == "__main__":
-    t = PrepareTree()
-    print t.all_leaves
+    G = PrepareTree()
+    level_number = 4
+    migration_type = "smaller_s_b_arrow_t"
+    current_delta = [1,0,1,1]
+    lineage = ChooseLineageandUpdateDelta(G, level_number, migration_type, current_delta)
+    #we expect current_delta to be [1,0,0,1]
+    #and lineage = 2
+    print lineage
