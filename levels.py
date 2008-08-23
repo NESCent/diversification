@@ -132,4 +132,6 @@ def DemarcateLevels(tree):
         for child in curr_node.children:
             new_level.lineages.remove(child)
         new_level.lineages.append(curr_node)
-        level = new_level
+        level = new_level      
+
+        

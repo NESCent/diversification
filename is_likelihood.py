@@ -13,39 +13,69 @@ import cjumpchain
 import math
 
 
-def GetInfoForForwardProbMIG(A,level):
-    """
-    A helper function to get inputs for ProbMIG
-    
-    Input Parameters
-    ----------------
-    @param A        the tuple (theta,BRL(theta),MIG(theta))
-    @param level    the level in the tree
+def GetNumberOfLevels(A):
+    return len(A.levels)
 
-    Return Values
-    -------------
-    k                           the number of migration (SBArrowT) events that will occur within the level
-    states_within_level         a k+1 length array of all the (r_t,q_bb,q_b_arrow_t,q_bt) states within the level,
-                                where states_within_level[i] is the state right after the ith migration
-    l                           the time span of level "level"
-    n                           the number of levels in A
+def GetLevelLength(A,level):
+    current_level=A.levels[level]
+    branch_length=current_level.begin_time-current_level.end_time
+    return branch_length
 
-    Details
-    ------
-    There are k+1 states within a level since there are k migration events within a level, and at each migration
-    the values (r_t,q_bb,q_b_arrow_t,q_bt) change.
-    states_within_level[i]= the tuple (r_t,q_bb,q_b_arrow_t,q_bt) representing the state after the i-th migration
-    where i ranges from 0 to k.
-    """
-    ##right now I am returning one value in order to test out other functions
-    ##here the level is 6+5+4+3=18
-    k=2
-    l=100
-    states_within_level=range(3)
-    states_within_level[0]=(0,5,4,3)
-    states_within_level[1]=(1,5,3,3)
-    states_within_level[2]=(2,5,2,3)
-    return (l,k,states_within_level,1)
+def GetNumberOfMigrationEvents(A,level):
+    current_level=A.levels[level]
+    current_event_history=current_level.event_history
+    return len(event_history)-1
+
+def GetQ_bbAndQ_bt(A,level):
+    current_level=A.levels[level]
+    current_event_history=current_level.event_history
+    current_lineages=current_level.lineages
+    q_bb=0
+    q_bt=0
+    for current_lineage in level_lineages:
+        current_lineage_index=current_lineage.index
+        #see if the lineages is a boreal lineage and not a migrating one
+        if(current_event_history[0][current_lineage_index]==0 and (current_lineage_index not in current_event_history)):
+            children=current_lineage.children
+            child_1=children[0]
+            child_2=children[1]
+            child_1_index=child_1.index
+            child_2_index=child_2.index
+            A_levels=A.levels
+            child_1_level_index=-1
+            child_2_level_index=-1
+            found="FALSE"
+            #find the levels at which the two children lineages/nodes first appear
+            for i in range(1,GetNumberOfLevels(A)+1):
+                current_event_history=A_levels[i].event_history
+                if(current_event_history[0].has_key(child_1_index)):
+                    child_1_level_index=i
+                    found="TRUE"
+            if(found=="TRUE"):
+                break
+
+            for i in range(1,GetNumberOfLevels(A)+1):
+                current_event_history=A_levels[i].event_history
+                if(current_event_history[0].has_key(child_2_index)):
+                    child_2_level_index=i
+                    found="TRUE"
+            if(found=="TRUE"):
+                break            
+                    
+            child_1_level=A.levels[child_1_level_index]
+            child_2_level=A.levels[child_2_level_index]
+            child_1_state=child_1_level.event_history[0][child_1_index]
+            child_2_state=child_2_level.event_history[0][child_2_index]
+            if(child_1_state==1 or child_2_state=1):
+                q_bt+=1
+
+            else:
+                q_bb+=1
+
+        #end if statement making sure lineages are both boreal and non-migrating
+    #end for-loop looping through all lineages in the specified level
+    return(q_bt, q_bb)                
+
 
 def ForwardProbMIG(A,sigma):
     """
@@ -56,43 +86,140 @@ def ForwardProbMIG(A,sigma):
     @param A        the tuple (theta,BRL(theta),MIG(theta))
     @param level    the level in the tree
     """
-    # level is 1 here for no particular reason, just need n
-    (l,k,states_within_level,n)= GetInfoForForwardProbMIG(A,1)
-    mult=1
+    # level is 1 here for no particular reason, just need n's value which is independent of level
+    n=GetNumberOfLevels(A)
     for level in range(1,n+1):
-        (l,k,states_within_level,n)= GetInfoForForwardProbMIG(A,level)
-        mult=mult*ProbKMigrationInL(l,k,states_within_level,sigma)
+        l=GetLevelLength(A,level)
+        k=GetNumberOfMigrationEvents(A,level)
+        (q_bb,q_bt)=GetQ_bbAndQ_bt(A,level)
+        mult=mult*ProbKMigrationInL(level,l,k,q_bb,q_bt,sigma)
 
     return mult        
-    
 
-def ProbKMigrationInL(l,k,states_within_level,sigma):
+def GetHBar(i,A,sigma):
     """
-    Returns the forward probability of the k migrations that occur in the level lev. Defined in equation 29.
+    gives the sum of the rates of all possible speciation events in the level i
+
+    Input Parameters
+    ----------------
+    i       the level
+    A       the tree G plus character state assignments, of class Tree
+    sigma   see ForwardRateSTT
+    Return Value
+    -----------
+    Sum of GetH(X,i,A,sigma) for X in {'s_tt,s_bb,s_bt'}
+    """
+    return GetH('s_tt',i,A,sigma)+GetH('s_bb',i,A,sigma)+GetH('s_bt',i,A,sigma)
+
+def GetYi(A,i):
+    """
+    returns the speciation event that ends level i
+
+    Input
+    -----
+    @param i    the level
+    @param A    The tree G plus character assignments, of class Tree
+
+    Return value
+    ------------
+    the speciation event that ends level i in Tree A, either s_tt, s_bb, or s_bt
+    """
+    level_i_event_history=A.levels[i].eventhistory
+    next_level_event_history=A.levels[i+1].eventhistory
+    set_lineage_indices_level_i=set(level_i_event_history[0].keys())
+    set_lineage_indices_next_level=set(next_level_event_history[0].keys())
+    set_new_lineages_indices=set_lineage_indices_next_level.difference(set_lineage_indices_level_i)
+    set_bifurcated_lineage_index=set_lineage_indices_level_i.difference(set_lineage_indices_next_level)
+    new_lineages_indices=[set_new_lineages.pop(),set_new_lineages.pop()]
+    bifurcated_lineage_index=[set_bifurcated_lineage_index.pop()]
+
+    character_bifurcated=level_i_event_history[0][bifurcated_lineage_index]
+    character_new_1=next_level_event_history[0][new_lineages_indices[0]]
+    character_new_2=next_level_event_history[0][new_lineages_indices[1]]
+
+    if(character_bifurcated==1):
+        return 's_tt'
+    if(character_new_1==1 or character_new_2==1):
+        return 's_bt'
+    else:
+        return 's_bb'
+    return ()    
+    
+    return ()
+def GetH(X,i,A,sigma):
+    """
+    Gives the rate of event X in the ith level
+    
+    Input Parameters
+    ----------------
+    @param X        either 's_tt', 's_bb' or 's_bt'
+    @param i        the level
+    @param A        the tree G plus character state assignments, of class Tree
+    @param sigma    see ForwardRateSTT
+
+    Return Value
+    ------------
+    the rate of event X in the ith level, where X is either STT, SBB or SBT
+    """
+    (q_bb,q_bt)=GetQ_bbAndQ_bt(A,i)
+    q_b_arrow_t=len(A.levels[i].event_history)-1
+    r_t=i-q_b_arrow_t-q_bb-q_bt
+    if(X=='s_tt'):
+        return ForwardRateSTT((r_t,q_bb,q_b_arrow_t,q_bt),sigma)
+    if(X=='s_bb'):
+        return ForwardRateSBB((r_t,q_bb,q_b_arrow_t,q_bt),sigma)
+    if(X=='s_bt'):
+        return ForwardRateSBT((r_t,q_bb,q_b_arrow_t,q_bt),sigma)
+    return ()
+
+def ForwardProbThetaAndBRLGivenMIG(A,sigma)
+    """
+    """
+    n=GetNumberOfLevels(A)
+    for i in range(1,n):
+        l=GetLevelLength(A,i)
+        hbar_i=GetHBar(i,A,sigma)
+        Yi=GetYi(A,i)
+        mult=mult*hbar_i*math.exp(-hbar_i*l_i)*GetH(Y_i,i,A,sigma)/hbar_i
+
+    l_n=GetLevelLength(A,n)
+    hbar_n=GetHBar(n,A,sigma)
+    mult=mult*hbar_n*math.exp(-hbar_n*l_n)
+    return mult
+
+def ForwardProbA(A,sigma)
+    """
+    """
+    return ForwardProbThetaAndBRLGivenMIG(A,sigma)*ForwardProbMIG(A,sigma)
+        
+        
+    
+def ProbKMigrationInL(level,l,k,q_bb,q_bt,sigma):
+    """
+    Returns the forward probability of the k migrations that occur in the level. Defined in equation 29.
     Input Parameters
     ---------------
+    @param level                        the level number
     @param l                            the duration of the level
     
     @param k                            the number of migrations in the level
     
-    @param states_within_level          a k+1 length array of all the (r_t,q_bb,q_b_arrow_t,q_bt) states within the level,
-                                        where states_within_level[i] is the state right after the ith migration
+    @param q_bb                         the number of lineages in the level whose next event is a SBB event
+    @param q_bt                         the number of lineages in the level whose next event is a SBT event
                                         
     @param sigma                        sigma =(lambda, b, B, alpha, mu), see ForwarRateSTT for more details
     """
     coef=1
+    q_b_arrow_t=len(A.levels[i].event_history)-1
+    r_t=level-q_b_arrow_t-q_bb-q_bt
     for i in range(1,k+1):
-        #states_within_level[i-1] is the state right before the ith migration within the level
-        coef=coef*Phi(states_within_level[i-1],sigma)
-
+        coef=coef*Phi(i,(r_t,q_bb,q_b_arrow_t,q_bt),sigma)
     sum=0
-    #if the input to PhiJK is (j,k,...) the input to Phi, a term in PhiJK, is j-1
     for j in range(1,k+1):
-        sum=sum+PhiJK(j,k,states_within_level,sigma)*math.exp(-Phi(states_within_level[j-1],sigma)*l)        
-                                                             
+        sum=sum+PhiJK(j,k,(r_t,q_bb,q_b_arrow_t,q_bt),sigma)*math.exp(-Phi(j,(r_t,q_bb,q_b_arrow_t,q_bt),sigma)*l)                                                                   
     return coef*sum
 
-def PhiJK(j,k,states_within_level,sigma):
+def PhiJK(j,k,(r_t,q_bb,q_b_arrow_t,q_bt),sigma):
     """
     PhiJK is defined in Equation 29
     This is a helper function to ProbKMigrationInL
@@ -101,56 +228,37 @@ def PhiJK(j,k,states_within_level,sigma):
     ----------------
     @param j                    the input to Phi will be j-1
     @param k                    The number of migrations within the level
-    @param states_within_level  a k+1 length array of all the (r_t,q_bb,q_b_arrow_t,q_bt) states within the level,
-                                where states_within_level[i] is the state right after the ith migration                       
+    @param (r_t,q_bb,q_b_arrow_t,q_bt)  the (r_t,q_bb,q_b_arrow_t,q_bt) tuple before the first migration within the level
+                                        See ForwardRateSTT for more details                      
     @param sigma                sigma =(lambda, b, B, alpha, mu), where  
                                 lambda is the turnover rate in state 0 (the boreal region), 
                                 b = the effective migration rate from state 0 to 1 (boreal to tropical), 
                                 B = the total number of species in state 0 (the boreal region)
                                 alpha = the per lineage speciation rate in state 1 (the neotropical region), and 
                                 mu = the per lineage extinction rate in state 1 (the neotropical region).
-    Details
-    -------
-    #states_within_level[i-1] is the state right before the ith migration within the level
     """
     product=1
-    #print("j is" + str(j))
     if(j==1):
         product=1
-        #print("j equals 1")
-
     else:
         for i in range(1,j):
-            current_state_i=states_within_level[i-1]
-            current_state_j=states_within_level[j-1]
-            product=product*(Phi(current_state_i,sigma)-Phi(current_state_j,sigma))
-            #print("in first")
-            #print("range "+str(1)+" "+str(k))
-            #print("i is " +str(i))
-            #print(product)
-
-    #if(j==k):
-        #print("j equals k")    
+            product=product*(Phi(i,(r_t,q_bb,q_b_arrow_t,q_bt),sigma)-Phi(j,(r_t,q_bb,q_b_arrow_t,q_bt),sigma))
+  
     if(j!=k):
         for i in range(j+1,k+1):
-            current_state_i=states_within_level[i-1]
-            current_state_j=states_within_level[j-1]
-            product=product*(Phi(current_state_i,sigma)-Phi(current_state_j,sigma))
-            #print("in second")
-            #print("range "+str(j+1)+" "+str(k))
-            #print("i is " +str(i))
-            #print(product)
+            product=product*(Phi(i,(r_t,q_bb,q_b_arrow_t,q_bt),sigma)-Phi(j,(r_t,q_bb,q_b_arrow_t,q_bt),sigma))
     
     return pow(product,-1)        
 
-def Phi(current_state,sigma):
+def Phi(i,(r_t,q_bb,q_b_arrow_t,q_bt),sigma):
     """
     Phi(i) is the forward rate of SBarrowT right before the i-th migration
 
     Input Parameters
     ----------------
-    @param current_state    the current (r_t,q_bb,q_b_arrow_t,q_bt) tuple before the ith migration within the level
-                            See ForwardRateSTT for more details
+    @i                                      represents the ith migration
+    @param (r_t,q_bb,q_b_arrow_t,q_bt)    the  (r_t,q_bb,q_b_arrow_t,q_bt) tuple before the first migration within the level
+                                          See ForwardRateSTT for more details
                             
     @param sigma    sigma =(lambda, b, B, alpha, mu), See ForwardRateSTT for more details
     
@@ -159,7 +267,7 @@ def Phi(current_state,sigma):
     ForwardRateSBArrowT(current_state,sigma), the forward rate of SBArrowT right before the ith migration within
     the level
     """
-    return ForwardRateSBArrowT(current_state,sigma)
+    return ForwardRateSBArrowT((r_t+i-1,q_bb,q_b_arrow_t-i+1,q_bt),sigma)
 
 
 def ForwardRateSTT(current_state,sigma,num_sum=20):
@@ -364,7 +472,7 @@ def LikelihoodOfParameters(G, delta, sigma):
         # used in place of G.
         # calculate forward probability of A given sigma, Pr(A | sigma) 
         # according to the procedure described in Section 5.4.
-        forward_probability_of_A_given_sigma = ForwardProbMIG(A, sigma)
+        forward_probability_of_A_given_sigma = ForwardProbA(A,sigma)
 
         # It is guaranteed that density_of_A > 0
         importance_sampling_weight = forward_probability_of_A_given_sigma/density_of_A

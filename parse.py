@@ -272,4 +272,8 @@ def Read(tree_name, taxon_table, state_table, tree):
     tree_traverse.TreeLeaves(tree)
     levels.DemarcateLevels(tree)
     levels.PrintAllLevels(tree)
+    temp_levels=tree.levels
+    #k=len(tree.levels)
+   # for i in range(1,2):
+    #    tree.levels[i]=temp_levels[k-i]  
     return tree

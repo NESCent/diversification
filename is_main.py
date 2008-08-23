@@ -46,6 +46,7 @@
 import os
 import sys
 import re
+import levels
 
 # Ganesh imports
 import parse
@@ -82,7 +83,7 @@ state_table = {}
 taxa_block = False
 states_block = False
 
-TREE_FILE = open('validStrings.nex', "r")
+TREE_FILE = open('onetree.nex', "r")
 
 for line in TREE_FILE.readlines():
     # skip if line contains just whitespaces
@@ -130,11 +131,11 @@ for line in TREE_FILE.readlines():
         tree_name = tree_tuple[0].strip()
         tree_string = tree_tuple[1].strip()
         parsed_tree = parse.Read(tree_name, taxon_table, state_table, tree_string)
-        #parsed_tree.name = tree_name
+        parsed_tree.name = tree_name
         #tree_traverse.PostOrderTraverse(parsed_tree.root, tree_traverse.CalculateNodeAges)
         #tree_traverse.PrintLabel(parsed_tree.root)
         #tree_traverse.PostOrderTraverse(parsed_tree.root, tree_traverse.PrintSelfParentLabel)
-        #levels.DemarcateLevels(parsed_tree)
+        levels.DemarcateLevels(parsed_tree)
         #levels.PrintAllLevels(parsed_tree)
         #tree_traverse.TreeLeaves(parsed_tree)
 
