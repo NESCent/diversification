@@ -1908,8 +1908,6 @@ def PickNextStateofChain(row_of_transition_matrix):
     for i in range(len(row_of_transition_matrix)):
         spot+=row_of_transition_matrix[i]
         row_for_choosing[i]=spot
-        
-    print("length row for choosing "+str(len(row_for_choosing)))
 
     for i in range(len(row_for_choosing)):
         if(i==0):
@@ -2079,18 +2077,18 @@ def MovetoNextLevel(current_state, current_delta, all_delta, current_level, next
     if (x_1==1 and x_2==1):#stt
         current_delta.update({new_index:1})
         all_delta.update({new_index:1})
-        assert(rt>=1)#this should be a given by the structure of the transition matrix
+        assert(r_t>=1)#this should be a given by the structure of the transition matrix
         if (r_t >= 1):
             return ((q_t, r_t-1, current_delta[next_x_1_index], current_delta[next_x_2_index]),current_delta,all_delta)
     if ((x_1==1 and x_2==0) or(x_1==0 and x_2==1)):#sbt
         current_delta.update({new_index:0})
         all_delta.update({new_index:0})
         #(1,0) --> 0 so r_t decreases by 1
-        assert(rt>=1)
+        assert(r_t>=1)
         if (r_t >=1):#this should be a given by the structure of the transition matrix
             return ((q_t, r_t-1, current_delta[next_x_1_index], current_delta[next_x_2_index]),current_delta,all_delta)
 
-def Test(G,delta,sigma):
+def Test(delta,sigma,G):
     (transition_matrices, state_to_index_in_transition_matrices, index_in_transition_matrices_to_state)=MakeTransitionMatricesbyLevels(G,delta,sigma)
     
     return SampleFromIS(G,delta,sigma,(transition_matrices, state_to_index_in_transition_matrices, index_in_transition_matrices_to_state))
@@ -2356,6 +2354,7 @@ def SampleFromIS(G, delta, sigma, (transition_matrices, state_to_index_in_transi
     # I am doing a deep copy since I don't want to mess with the original
     # delta.
     current_delta = delta.copy()
+    
     all_delta=delta.copy()
 
     while not current_level_number == 1:
@@ -2363,9 +2362,16 @@ def SampleFromIS(G, delta, sigma, (transition_matrices, state_to_index_in_transi
         # Note: the following, and all assignments in fact, are copies by
         # reference, since all an assignment does in python 
         # is to map a name to an object.
+        print("level 4 event history "+str(G.levels[4-4].event_history))
+        print("level 3 event history "+str(G.levels[4-3].event_history))
+        print("level 2 event history "+str(G.levels[4-2].event_history))
         current_level = G.levels[n_leaves - current_level_number]
-        print("got to append")
-        current_level.event_history.append(current_delta)
+        print("append to level "+str(current_level_number)+" "+str(current_delta))
+        current_level.event_history.append(current_delta.copy())
+        print("level 4 event history "+str(G.levels[4-4].event_history))
+        print("level 3 event history "+str(G.levels[4-3].event_history))
+        print("level 2 event history "+str(G.levels[4-2].event_history))
+                  
 
         # when the conditional jump chain is in level k (i.e., the total
         # number of lineages = k), the number of states at that level 
@@ -2406,15 +2412,13 @@ def SampleFromIS(G, delta, sigma, (transition_matrices, state_to_index_in_transi
             # pick a next state to transition to such that 
             # Pr(index of next state = j | index of current state = index_of_current_state) = transition_matrix_for_the_level[index_of_current_state][j]
             (index_of_next_state, probability_of_transition) = PickNextStateofChain(transition_matrix_for_the_level[index_of_current_state])
-            print("current_state "+str(index_of_current_state))
-            print("next state "+str(index_of_next_state))
+            print("current_state "+str(state_of_cond_jump_chain))
             if(index_of_next_state==len(index_in_transition_matrix_to_state)):
                 print("next level")
                 whether_in_the_same_level = "False"
             # check if current state and the proposed next state are in the same level
             #whether_in_the_same_level = WhetherInTheSameLevel(state_of_cond_jump_chain, next_state_of_cond_jump_chain)
             if whether_in_the_same_level == "True":
-                print("got_here "+whether_in_the_same_level)
                 # migration event is happening. So pick a lineage to
                 # migrate. For our specific model we need to pick one of
                 # the 1 (neotropical lineages) to migrate to 0 (remember
@@ -2425,10 +2429,13 @@ def SampleFromIS(G, delta, sigma, (transition_matrices, state_to_index_in_transi
                 # uniformly at random among
                 # all lineages that *could* migrate and return it.
                 next_state_of_cond_jump_chain = index_in_transition_matrix_to_state[index_of_next_state]
+                print("next state "+str(next_state_of_cond_jump_chain))
                 migration_type = MigrationType(state_of_cond_jump_chain, next_state_of_cond_jump_chain)
+                print("current_delta "+str(current_delta))
                 (migrating_lineage, current_delta, all_delta) = ChooseLineageandUpdateDelta(G, current_level_number, migration_type, current_delta, all_delta)
-                
+                print("next_delta "+str(current_delta))
                 current_level.event_history.append(migrating_lineage)
+                print("appended migrating lineage "+str(migrating_lineage))
                 
                 # updating the state of the chain.
                 state_of_cond_jump_chain = next_state_of_cond_jump_chain
@@ -2436,7 +2443,10 @@ def SampleFromIS(G, delta, sigma, (transition_matrices, state_to_index_in_transi
             else:
                 next_level_number = current_level_number-1
                 if(next_level_number!=1):
-                    next_level = G.levels[n_leaves - next_level_number]    
+                    next_level = G.levels[n_leaves - next_level_number]
+                    print("1level 4 event history "+str(G.levels[4-4].event_history))
+                    print("level 3 event history "+str(G.levels[4-3].event_history))
+                    print("level 2 event history "+str(G.levels[4-2].event_history))
                     # The chain wants to move to the next level (to level k-1 if
                     # the current level is k). 
                     # Basically, the chain wants to effect a speciation
@@ -2460,12 +2470,20 @@ def SampleFromIS(G, delta, sigma, (transition_matrices, state_to_index_in_transi
                     # (b) return the initial state for the next level's conditional jump chain 
                     # (c) initialize the event history for the next level with
                     #     the updated delta
+                    print("2level 4 event history "+str(G.levels[4-4].event_history))
+                    print("level 3 event history "+str(G.levels[4-3].event_history))
+                    print("level 2 event history "+str(G.levels[4-2].event_history))
                     (initial_state_in_the_next_level,current_delta,all_delta) = MovetoNextLevel(state_of_cond_jump_chain, current_delta, all_delta, current_level, next_level)
-
+                    print("3level 4 event history "+str(G.levels[4-4].event_history))
+                    print("level 3 event history "+str(G.levels[4-3].event_history))
+                    print("level 2 event history "+str(G.levels[4-2].event_history))
                     # and *now* update the state of the chain
                     state_of_cond_jump_chain = initial_state_in_the_next_level
                     # update current level number
                 current_level_number=next_level_number
+                print("4level 4 event history "+str(G.levels[4-4].event_history))
+                print("level 3 event history "+str(G.levels[4-3].event_history))
+                print("level 2 event history "+str(G.levels[4-2].event_history))
 
             probability_of_history = probability_of_history * probability_of_transition
 
