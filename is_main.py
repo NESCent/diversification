@@ -53,7 +53,7 @@ import parse
 #import tree_traverse
 #import levels
 #from is_classes import Node 
-#from is_classes import Tree 
+#from is_classes import Tree
 
 p_lambda = 0.1
 p_b = 0.05

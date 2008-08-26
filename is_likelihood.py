@@ -17,17 +17,20 @@ def GetNumberOfLevels(A):
     return len(A.levels)
 
 def GetLevelLength(A,level):
-    current_level=A.levels[level]
+    n=A.num_leaves
+    current_level=A.levels[n-level]
     branch_length=current_level.begin_time-current_level.end_time
     return branch_length
 
 def GetNumberOfMigrationEvents(A,level):
-    current_level=A.levels[level]
+    n=A.num_leaves
+    current_level=A.levels[n-level]
     current_event_history=current_level.event_history
     return len(event_history)-1
 
 def GetQ_bbAndQ_bt(A,level):
-    current_level=A.levels[level]
+    n=A.num_leaves
+    current_level=A.levels[n-level]
     current_event_history=current_level.event_history
     current_lineages=current_level.lineages
     q_bb=0
@@ -66,7 +69,7 @@ def GetQ_bbAndQ_bt(A,level):
             child_2_level=A.levels[child_2_level_index]
             child_1_state=child_1_level.event_history[0][child_1_index]
             child_2_state=child_2_level.event_history[0][child_2_index]
-            if(child_1_state==1 or child_2_state=1):
+            if(child_1_state==1 or child_2_state==1):
                 q_bt+=1
 
             else:
@@ -88,7 +91,7 @@ def ForwardProbMIG(A,sigma):
     """
     # level is 1 here for no particular reason, just need n's value which is independent of level
     n=GetNumberOfLevels(A)
-    for level in range(1,n+1):
+    for level in range(2,n+1):
         l=GetLevelLength(A,level)
         k=GetNumberOfMigrationEvents(A,level)
         (q_bb,q_bt)=GetQ_bbAndQ_bt(A,level)
@@ -124,8 +127,9 @@ def GetYi(A,i):
     ------------
     the speciation event that ends level i in Tree A, either s_tt, s_bb, or s_bt
     """
-    level_i_event_history=A.levels[i].eventhistory
-    next_level_event_history=A.levels[i+1].eventhistory
+    n=A.num_leaves
+    level_i_event_history=A.levels[n-i].eventhistory
+    next_level_event_history=A.levels[n-(i+1)].eventhistory
     set_lineage_indices_level_i=set(level_i_event_history[0].keys())
     set_lineage_indices_next_level=set(next_level_event_history[0].keys())
     set_new_lineages_indices=set_lineage_indices_next_level.difference(set_lineage_indices_level_i)
@@ -172,7 +176,7 @@ def GetH(X,i,A,sigma):
         return ForwardRateSBT((r_t,q_bb,q_b_arrow_t,q_bt),sigma)
     return ()
 
-def ForwardProbThetaAndBRLGivenMIG(A,sigma)
+def ForwardProbThetaAndBRLGivenMIG(A,sigma):
     """
     """
     n=GetNumberOfLevels(A)
@@ -187,7 +191,7 @@ def ForwardProbThetaAndBRLGivenMIG(A,sigma)
     mult=mult*hbar_n*math.exp(-hbar_n*l_n)
     return mult
 
-def ForwardProbA(A,sigma)
+def ForwardProbA(A,sigma):
     """
     """
     return ForwardProbThetaAndBRLGivenMIG(A,sigma)*ForwardProbMIG(A,sigma)
@@ -209,8 +213,9 @@ def ProbKMigrationInL(level,l,k,q_bb,q_bt,sigma):
                                         
     @param sigma                        sigma =(lambda, b, B, alpha, mu), see ForwarRateSTT for more details
     """
+    n=A.num_leaves
     coef=1
-    q_b_arrow_t=len(A.levels[i].event_history)-1
+    q_b_arrow_t=len(A.levels[n-i].event_history)-1
     r_t=level-q_b_arrow_t-q_bb-q_bt
     for i in range(1,k+1):
         coef=coef*Phi(i,(r_t,q_bb,q_b_arrow_t,q_bt),sigma)

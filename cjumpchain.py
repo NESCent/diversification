@@ -65,30 +65,49 @@ def CombinationChoose2(list,allcomb,j):
 
     return -1        
     
-def LogFactorialOfNegative(z,terms=10000):
+def LogFactorialOfNegative(z,terms=20):
     """
-    Returns an approximation of the factorial of a negative number less than -1.
-
+    Returns an approximation of the log(factorial) of a negative number less than -1. 
     Input paramters
     ---------------
-    n       the negative number less than one
+    n       any real number that is not a non-positive integer
     terms   the number of terms for which to carry out the approximation
 
     Return value
     ------------
-    An approximation of the factorial. Uses the Euler infinite product
-    definition of the Gamma function
+    An approximation of the factorial.  Uses the Euler infinite product
+    definition of the Gamma function.  Returns the log(factorial(z))
+
+    Details
+    -------
+    If z+1 is negative:
+    First calculates log(-factorial(z)). Then returns 1/log(-factorial(z)). All
+    this is necessary because a log has to be taken of 1/z a the beginning of the
+    approximation, so that 1/z term cannot be negative (although z still is negative).
+    Otherwise, just calculates log(factorial(z))
     """
     z=float(z)
     z=z+1
-    fact=math.log(1/z,10)
-    #fact=1/z
-    for n in range(terms):
-        n=n+1
-        n=float(n)
-        fact=fact+math.log(float(pow((1+1/n),z))/float(1+z/n),10)
-        #fact=fact*float(pow((1+1/n),z))/float(1+z/n)
-    return fact
+    if(z>0):
+        fact=math.log(1/(z),10)
+        #fact=1/z
+        for n in range(terms):
+            n=n+1
+            n=float(n)
+            fact=fact+math.log(float(pow((1+1/n),z))/float(1+z/n),10)
+            #fact=fact*float(pow((1+1/n),z))/float(1+z/n)
+        return fact
+    if(z==0):
+        return 1
+    if(z<0):
+        fact=math.log(1/(-z),10)
+        #fact=1/z
+        for n in range(terms):
+            n=n+1
+            n=float(n)
+            fact=fact+math.log(float(pow((1+1/n),z))/float(1+z/n),10)
+            #fact=fact*float(pow((1+1/n),z))/float(1+z/n)
+        return 1/fact
 
 def CombOfNegative(n,k):
     """
@@ -96,7 +115,8 @@ def CombOfNegative(n,k):
 
     Input
     -----
-    n,k     Any real number that is not a negative integer
+    n   any real number that is not a non-positive integer
+    k   any real number that is not a non-positive integer
 
     Output
     ------
@@ -755,9 +775,9 @@ def CalculateLogPi(j_species, sigma):
     if (alpha >= mu):
         return -1
     if(b<alpha):
-        combination= float(CombOfNegative(b/alpha+j_species-1,j_species, exact=0))
+        combination= float(CombOfNegative(b/alpha+j_species-1,j_species))
     else:
-        combination = float(comb(b/alpha+j_species-1,j_species, exact=0))
+        combination = float(comb(b/alpha+j_species-1,j_species))
     if (combination == 0):
         #math.log(0,something) is undefined, so just return -1 for error
         return -1
@@ -2089,6 +2109,10 @@ def MovetoNextLevel(current_state, current_delta, all_delta, current_level, next
             return ((q_t, r_t-1, current_delta[next_x_1_index], current_delta[next_x_2_index]),current_delta,all_delta)
 
 def Test(delta,sigma,G):
+    alpha=sigma[3]
+    mu=sigma[4]
+    if(alpha>mu):
+        return('error, alpha is greater than mu')
     (transition_matrices, state_to_index_in_transition_matrices, index_in_transition_matrices_to_state)=MakeTransitionMatricesbyLevels(G,delta,sigma)
     
     return SampleFromIS(G,delta,sigma,(transition_matrices, state_to_index_in_transition_matrices, index_in_transition_matrices_to_state))
@@ -2144,6 +2168,9 @@ def SampleFromIS(G, delta, sigma, (transition_matrices, state_to_index_in_transi
     a real number density_A, where A is a 
     a time-order event history A (for use in the right side of
                                      Equation 8)
+    all_delta   a dictionary mapping the indices of all lineages in all levels to their character
+                states right before the lineages coalesce
+
 
     -  The time-order event history A is generated
        using a probabilistic process, and hence along with A
@@ -2187,11 +2214,6 @@ def SampleFromIS(G, delta, sigma, (transition_matrices, state_to_index_in_transi
         For the next level, (i.e., level 3) the initial character state
         assignment will be: {1:0, 4:1, 5:0} (since 2 & 3 were in state
         0, their parent 5 also will be in state 0).
-
-    Return Value
-    ------------
-    all_delta   a dictionary mapping the indices of all lineages in all levels to their character
-                states right before the lineages were created in a branching event
 
     Details: 
     -------    
@@ -2321,6 +2343,10 @@ def SampleFromIS(G, delta, sigma, (transition_matrices, state_to_index_in_transi
     #           
     #           level <- level - 1
     """
+    alpha=sigma[3]
+    mu=sigma[4]
+    if(alpha>mu):
+        return("error, alpha is greater than mu")
     # In what follows, uncond is short for unconditional (i.e., not
     # conditioned on the tree), and cond is short for conditional (i.e., 
     # conditioned on the tree). And  prob, of course, is short for probability.
@@ -2362,17 +2388,8 @@ def SampleFromIS(G, delta, sigma, (transition_matrices, state_to_index_in_transi
         # Note: the following, and all assignments in fact, are copies by
         # reference, since all an assignment does in python 
         # is to map a name to an object.
-        print("level 4 event history "+str(G.levels[4-4].event_history))
-        print("level 3 event history "+str(G.levels[4-3].event_history))
-        print("level 2 event history "+str(G.levels[4-2].event_history))
         current_level = G.levels[n_leaves - current_level_number]
-        print("append to level "+str(current_level_number)+" "+str(current_delta))
-        current_level.event_history.append(current_delta.copy())
-        print("level 4 event history "+str(G.levels[4-4].event_history))
-        print("level 3 event history "+str(G.levels[4-3].event_history))
-        print("level 2 event history "+str(G.levels[4-2].event_history))
-                  
-
+        current_level.event_history.append(current_delta.copy())                  
         # when the conditional jump chain is in level k (i.e., the total
         # number of lineages = k), the number of states at that level 
         # is 4(k-1) (see paragraph 3, page 19). Further, there is one
@@ -2398,14 +2415,14 @@ def SampleFromIS(G, delta, sigma, (transition_matrices, state_to_index_in_transi
 
         index_of_current_state = state_to_index_in_transition_matrix[state_of_cond_jump_chain]
         transition_matrix_for_the_level = transition_matrices[n_leaves - current_level_number]
-        
+    
         # transition_matrix_for_the_level[index_of_current_state] is a row
         # of probabilities of transitions from the current state. 
         # the probabilities in the row must sum up to 1. We can verify that
         # by placing an assert. If the condition fails, the program exits
         # with a message. In python, sum(some_list) returns the sum of the
         # elements of  some_list, if list consists of real numbers.
-        assert(sum(transition_matrix_for_the_level[index_of_current_state]) == 1.0)
+        assert(1.0-1e5<(sum(transition_matrix_for_the_level[index_of_current_state]))< 1.0+1e-5)
 
         whether_in_the_same_level = "True"
         while whether_in_the_same_level == "True":
@@ -2414,7 +2431,6 @@ def SampleFromIS(G, delta, sigma, (transition_matrices, state_to_index_in_transi
             (index_of_next_state, probability_of_transition) = PickNextStateofChain(transition_matrix_for_the_level[index_of_current_state])
             print("current_state "+str(state_of_cond_jump_chain))
             if(index_of_next_state==len(index_in_transition_matrix_to_state)):
-                print("next level")
                 whether_in_the_same_level = "False"
             # check if current state and the proposed next state are in the same level
             #whether_in_the_same_level = WhetherInTheSameLevel(state_of_cond_jump_chain, next_state_of_cond_jump_chain)
@@ -2431,9 +2447,7 @@ def SampleFromIS(G, delta, sigma, (transition_matrices, state_to_index_in_transi
                 next_state_of_cond_jump_chain = index_in_transition_matrix_to_state[index_of_next_state]
                 print("next state "+str(next_state_of_cond_jump_chain))
                 migration_type = MigrationType(state_of_cond_jump_chain, next_state_of_cond_jump_chain)
-                print("current_delta "+str(current_delta))
                 (migrating_lineage, current_delta, all_delta) = ChooseLineageandUpdateDelta(G, current_level_number, migration_type, current_delta, all_delta)
-                print("next_delta "+str(current_delta))
                 current_level.event_history.append(migrating_lineage)
                 print("appended migrating lineage "+str(migrating_lineage))
                 
@@ -2444,9 +2458,6 @@ def SampleFromIS(G, delta, sigma, (transition_matrices, state_to_index_in_transi
                 next_level_number = current_level_number-1
                 if(next_level_number!=1):
                     next_level = G.levels[n_leaves - next_level_number]
-                    print("1level 4 event history "+str(G.levels[4-4].event_history))
-                    print("level 3 event history "+str(G.levels[4-3].event_history))
-                    print("level 2 event history "+str(G.levels[4-2].event_history))
                     # The chain wants to move to the next level (to level k-1 if
                     # the current level is k). 
                     # Basically, the chain wants to effect a speciation
@@ -2470,24 +2481,14 @@ def SampleFromIS(G, delta, sigma, (transition_matrices, state_to_index_in_transi
                     # (b) return the initial state for the next level's conditional jump chain 
                     # (c) initialize the event history for the next level with
                     #     the updated delta
-                    print("2level 4 event history "+str(G.levels[4-4].event_history))
-                    print("level 3 event history "+str(G.levels[4-3].event_history))
-                    print("level 2 event history "+str(G.levels[4-2].event_history))
                     (initial_state_in_the_next_level,current_delta,all_delta) = MovetoNextLevel(state_of_cond_jump_chain, current_delta, all_delta, current_level, next_level)
-                    print("3level 4 event history "+str(G.levels[4-4].event_history))
-                    print("level 3 event history "+str(G.levels[4-3].event_history))
-                    print("level 2 event history "+str(G.levels[4-2].event_history))
                     # and *now* update the state of the chain
                     state_of_cond_jump_chain = initial_state_in_the_next_level
                     # update current level number
                 current_level_number=next_level_number
-                print("4level 4 event history "+str(G.levels[4-4].event_history))
-                print("level 3 event history "+str(G.levels[4-3].event_history))
-                print("level 2 event history "+str(G.levels[4-2].event_history))
-
             probability_of_history = probability_of_history * probability_of_transition
 
-    return(probability_of_history)            
+    return(probability_of_history,all_delta)            
 
 def PrepareTree():
     """
