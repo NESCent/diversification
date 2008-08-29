@@ -7,7 +7,7 @@
 #   levels=tree.levels
 #    current_level=levels[level_number]
 #    event_history=current_level.event_history
-#    lineage_names=event_history[0].keys()
+#    lineage_names=event_history[0].keys()b
 #   j=level_num
 #    allcomb=[]
 #    next_coalesce=CombinationChoose2(lineage_names,allcomb,j)
@@ -1967,7 +1967,7 @@ def MigrationType(z1, z2):
         ret = "m_1"
     return ret
 
-def ChooseLineageandUpdateDelta(G, level_number, migration_type, current_delta, all_delta):
+def ChooseLineageandUpdateDelta(G, level_number, migration_type, current_delta, all_delta_earlier):
     """
     Choose a lineage to migrate based on migration_type and return the migrated lineages and updated deltas
     
@@ -1977,7 +1977,8 @@ def ChooseLineageandUpdateDelta(G, level_number, migration_type, current_delta, 
     level_number    the current level
     migration_type  either s_b_arrow_t or m1 or m2
     current_delta   a map of all the existing lineages at the level by index to their current states
-    all_delta       a map of all existing lineages at all levels by index to their current states
+    all_delta_earlier       a map of all existing lineages at all levels by index to their current states
+
     
     Update all_delta based on migration_type, which could 
     be "m_1", "m_2", "smaller_s_b_arrow_t". Also return which lineage
@@ -1993,7 +1994,8 @@ def ChooseLineageandUpdateDelta(G, level_number, migration_type, current_delta, 
     -------------
      migrating_lineage  the lineage choosen to migrate
      current_delta      updated
-     all_delta          updated
+     all_delta_earlier  updated
+
     """
     #This returns the "indices" of the next_colalescing_lineages
     #remember "level_number" is really calculated backwards in G.levels
@@ -2006,14 +2008,14 @@ def ChooseLineageandUpdateDelta(G, level_number, migration_type, current_delta, 
         #migration always goes from 1 --> 0 backwards in time
         assert(current_delta[lineage1]==1)
         current_delta[lineage1] = 0
-        all_delta[lineage1] = 0
-        return (lineage1,current_delta,all_delta)
+        all_delta_earlier[lineage1] = 0
+        return (lineage1,current_delta,all_delta_earlier)
     if (migration_type=="m_2"):
         lineage2 = next_coalescing_lineages[1].index
         assert(current_delta[lineage2]==1)
         current_delta[lineage2] = 0
-        all_delta[lineage2] = 0
-        return (lineage2,current_delta,all_delta)
+        all_delta_earlier[lineage2] = 0
+        return (lineage2,current_delta,all_delta_earlier)
     if (migration_type=="smaller_s_b_arrow_t"):
         #need to randomly pick lineages whose deltas==1 to migrate, EXCLUDING
         #those involving next_coalescing_lineages. 
@@ -2034,22 +2036,24 @@ def ChooseLineageandUpdateDelta(G, level_number, migration_type, current_delta, 
         #update current_delta first
         lineage_to_migrate = random_list[0]
         current_delta[lineage_to_migrate] = 0
-        all_delta[lineage_to_migrate] = 0
-        return (random_list[0],current_delta,all_delta)
+        all_delta_earlier[lineage_to_migrate] = 0
+        return (random_list[0],current_delta,all_delta_earlier)
 
-def MovetoNextLevel(current_state, current_delta, all_delta, current_level, next_level):
+def MovetoNextLevel(current_state, current_delta, all_delta_earlier, all_delta_later, current_level, next_level):
     """
     (a) update current_delta,
     (b) return the initial state for the next level's conditional jump chain
         recall this has to be a kappa event.
     (c) initialize the event history for the next level with the updated delta
-    (d) update all_delta
+    (d) update all_delta_earlier
+    (e) update all_delta_later
     
     Input parameters
     -----------------
     current_delta           a map of lineage indices to character states, these are the character states
                             at the "beginning" i.e. later in time part of the level
-    all_delta               a map of all existing lineages at all levels by index to their current states
+    all_delta_earlier       a map of all existing lineages at all levels by index to their current states
+    all_delta_later         a map of all existing lineages at all levels by index to their most recent states
     current_level           is the of class Level
     next_level              is also of class Level
 
@@ -2057,7 +2061,7 @@ def MovetoNextLevel(current_state, current_delta, all_delta, current_level, next
     ------------
     initial_state_in_the_next_level     initial state for the next (earlier) level's jumpchain
     current_delta                       updated
-    all_delta                           updated
+    all_delta_earlier                           updated
 
     Details
     -------
@@ -2065,7 +2069,7 @@ def MovetoNextLevel(current_state, current_delta, all_delta, current_level, next
     Say next-coalescing lineages are 3 and 4, which coalesce to form lineage 6. 
     Say delta = {1:1, 2:1, 3:0, 4:0, 5:0}, and current_level=5, next_level=4. 
     The updated delta should be {1:1, 2:1, 6:0, 5:0} Note: this is a map so order
-    does not matter.  all_delta would be {1:1, 2:1, 6:0, 5:0, 3:0, 4:0}
+    does not matter.  all_delta_earlier would be {1:1, 2:1, 6:0, 5:0, 3:0, 4:0}
     
     Now when kappa happens to (1,4,1,1), it becomes 
     (1,3,-1,-1), the last two elements are -1 b/c we don't know what are
@@ -2090,23 +2094,26 @@ def MovetoNextLevel(current_state, current_delta, all_delta, current_level, next
     
     if (x_1==0 and x_2==0): #sbb
         current_delta.update({new_index:0})
-        all_delta.update({new_index:0})
+        all_delta_earlier.update({new_index:0})
+        all_delta_later.update({new_index:0})
         assert(q_t>=1)#this should be a given by the structure of the transition matrix
         if (q_t >= 1):
-            return ((q_t-1, r_t, current_delta[next_x_1_index], current_delta[next_x_2_index]),current_delta,all_delta)
+            return ((q_t-1, r_t, current_delta[next_x_1_index], current_delta[next_x_2_index]),current_delta,all_delta_earlier,all_delta_later)
     if (x_1==1 and x_2==1):#stt
         current_delta.update({new_index:1})
-        all_delta.update({new_index:1})
+        all_delta_earlier.update({new_index:1})
+        all_delta_later.update({new_index:1})
         assert(r_t>=1)#this should be a given by the structure of the transition matrix
         if (r_t >= 1):
-            return ((q_t, r_t-1, current_delta[next_x_1_index], current_delta[next_x_2_index]),current_delta,all_delta)
+            return ((q_t, r_t-1, current_delta[next_x_1_index], current_delta[next_x_2_index]),current_delta,all_delta_earlier,all_delta_later)
     if ((x_1==1 and x_2==0) or(x_1==0 and x_2==1)):#sbt
         current_delta.update({new_index:0})
-        all_delta.update({new_index:0})
+        all_delta_earlier.update({new_index:0})
+        all_delta_later.update({new_index:0})
         #(1,0) --> 0 so r_t decreases by 1
         assert(r_t>=1)
         if (r_t >=1):#this should be a given by the structure of the transition matrix
-            return ((q_t, r_t-1, current_delta[next_x_1_index], current_delta[next_x_2_index]),current_delta,all_delta)
+            return ((q_t, r_t-1, current_delta[next_x_1_index], current_delta[next_x_2_index]),current_delta,all_delta_earlier,all_delta_later)
 
 def Test(delta,sigma,G):
     alpha=sigma[3]
@@ -2125,9 +2132,11 @@ def SampleFromIS(G, delta, sigma, (transition_matrices, state_to_index_in_transi
     Pr(M | G, delta, sigma).
 
     migrations will be assigned to branches with known time-order, but 
-    without specifying the actual times of migrations. "all_delta" will be created.
-    "all_delta" is dictionary mapping the indices of all lineages in all levels to their character
-    states right before the lineages were created in a branching event
+    without specifying the actual times of migrations. "all_delta_earlier" will be created.
+    "all_delta_earlier" is dictionary mapping the indices of all lineages in all levels to their character
+    states right before the lineages were created in a branching event. Also, "all_delta_later" will be created.
+    "all_delta_later" is dictionary mapping the indices of all lineages in all levels to their most recent character
+    states.
     
 
     Input parameters
@@ -2168,9 +2177,11 @@ def SampleFromIS(G, delta, sigma, (transition_matrices, state_to_index_in_transi
     a real number density_A, where A is a 
     a time-order event history A (for use in the right side of
                                      Equation 8)
-    all_delta   a dictionary mapping the indices of all lineages in all levels to their character
-                states right before the lineages coalesce
+    all_delta_earlier   a dictionary mapping the indices of all lineages in all levels to their character
+                        states right before the lineages coalesce
 
+    all_delta_later     a dictionary mapping the indices of all lineages in all levels to their most recent
+                        character states
 
     -  The time-order event history A is generated
        using a probabilistic process, and hence along with A
@@ -2216,8 +2227,17 @@ def SampleFromIS(G, delta, sigma, (transition_matrices, state_to_index_in_transi
         0, their parent 5 also will be in state 0).
 
     Details: 
-    -------    
+    -------
 
+    if the event_history is     [{0: 1, 1: 1, 2: 1, 3: 1}]
+                                [{2: 1, 3: 1, 4: 1}, 4]
+                                [{4: 0, 5: 1}, 5]
+                                
+    all_delta_earlier is        {0: 1, 1: 1, 2: 1, 3: 1, 4: 0, 5: 0}
+    
+    all_delta_later is          {0: 1, 1: 1, 2: 1, 3: 1, 4: 1, 5: 1}
+
+    
     The input phylogenetic tree can be viewed as a tuple (tau, BRL(tau))
     (see also page 7, bullet point entitled "Sample history")
     where tau is the tree topology with *with known time order of branching
@@ -2381,7 +2401,8 @@ def SampleFromIS(G, delta, sigma, (transition_matrices, state_to_index_in_transi
     # delta.
     current_delta = delta.copy()
     
-    all_delta=delta.copy()
+    all_delta_earlier=delta.copy()
+    all_delta_later=delta.copy()
 
     while not current_level_number == 1:
         print("level "+str(current_level_number))
@@ -2447,7 +2468,7 @@ def SampleFromIS(G, delta, sigma, (transition_matrices, state_to_index_in_transi
                 next_state_of_cond_jump_chain = index_in_transition_matrix_to_state[index_of_next_state]
                 print("next state "+str(next_state_of_cond_jump_chain))
                 migration_type = MigrationType(state_of_cond_jump_chain, next_state_of_cond_jump_chain)
-                (migrating_lineage, current_delta, all_delta) = ChooseLineageandUpdateDelta(G, current_level_number, migration_type, current_delta, all_delta)
+                (migrating_lineage, current_delta, all_delta_earlier) = ChooseLineageandUpdateDelta(G, current_level_number, migration_type, current_delta, all_delta_earlier)
                 current_level.event_history.append(migrating_lineage)
                 print("appended migrating lineage "+str(migrating_lineage))
                 
@@ -2481,14 +2502,14 @@ def SampleFromIS(G, delta, sigma, (transition_matrices, state_to_index_in_transi
                     # (b) return the initial state for the next level's conditional jump chain 
                     # (c) initialize the event history for the next level with
                     #     the updated delta
-                    (initial_state_in_the_next_level,current_delta,all_delta) = MovetoNextLevel(state_of_cond_jump_chain, current_delta, all_delta, current_level, next_level)
+                    (initial_state_in_the_next_level,current_delta,all_delta_earlier, all_delta_later) = MovetoNextLevel(state_of_cond_jump_chain, current_delta, all_delta_earlier, all_delta_later, current_level, next_level)
                     # and *now* update the state of the chain
                     state_of_cond_jump_chain = initial_state_in_the_next_level
                     # update current level number
                 current_level_number=next_level_number
             probability_of_history = probability_of_history * probability_of_transition
 
-    return(probability_of_history,all_delta)            
+    return(probability_of_history,all_delta_earlier, all_delta_later)            
 
 def PrepareTree():
     """

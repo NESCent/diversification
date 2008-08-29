@@ -28,59 +28,68 @@ def GetNumberOfMigrationEvents(A,level):
     current_event_history=current_level.event_history
     return len(event_history)-1
 
-def GetQ_bbAndQ_bt(A,level):
+def GetQ_bbAndQ_bt(A,level,all_delta_earlier,all_delta_later):
     n=A.num_leaves
     current_level=A.levels[n-level]
     current_event_history=current_level.event_history
     current_lineages=current_level.lineages
     q_bb=0
     q_bt=0
-    for current_lineage in level_lineages:
+    for current_lineage in current_lineages:
         current_lineage_index=current_lineage.index
-        #see if the lineages is a boreal lineage and not a migrating one
-        if(current_event_history[0][current_lineage_index]==0 and (current_lineage_index not in current_event_history)):
+        #see if the lineages is a boreal lineage
+        #and make sure the lineage does not undergo a q_b_arrow_t event
+        if(current_event_history[0][current_lineage_index]==0 and all_delta_later[current_lineage_index]!=1):
             children=current_lineage.children
             child_1=children[0]
             child_2=children[1]
             child_1_index=child_1.index
             child_2_index=child_2.index
-            A_levels=A.levels
-            child_1_level_index=-1
-            child_2_level_index=-1
-            found="FALSE"
+
+            if(all_delta_earlier[child_1_index]==1 or all_delta_earlier[child_2_index]==1):
+                q_bt=q_bt+1
+            if(all_delta_earlier[child_1_index]==0 and all_delta_earlier[child_2_index]==0):
+                q_bb=q_bb+1
+
+            else: # a marker that something is wrong
+                print('GetQ_bbAndQ_bt is not working properly')
+                return(-1)
+                            
+            #found="FALSE"
             #find the levels at which the two children lineages/nodes first appear
-            for i in range(1,GetNumberOfLevels(A)+1):
-                current_event_history=A_levels[i].event_history
-                if(current_event_history[0].has_key(child_1_index)):
-                    child_1_level_index=i
-                    found="TRUE"
-            if(found=="TRUE"):
-                break
+            #for i in range(1,GetNumberOfLevels(A)+1):
+            #    current_event_history=A_levels[i].event_history
+            #    if(current_event_history[0].has_key(child_1_index)):
+            #        child_1_level_index=i
+            #        found="TRUE"
+            #if(found=="TRUE"):
+            #    break
 
-            for i in range(1,GetNumberOfLevels(A)+1):
-                current_event_history=A_levels[i].event_history
-                if(current_event_history[0].has_key(child_2_index)):
-                    child_2_level_index=i
-                    found="TRUE"
-            if(found=="TRUE"):
-                break            
+           # for i in range(1,GetNumberOfLevels(A)+1):
+           #     current_event_history=A_levels[i].event_history
+           #     if(current_event_history[0].has_key(child_2_index)):
+           #         child_2_level_index=i
+           #         found="TRUE"
+           # if(found=="TRUE"):
+           #     break            
                     
-            child_1_level=A.levels[child_1_level_index]
-            child_2_level=A.levels[child_2_level_index]
-            child_1_state=child_1_level.event_history[0][child_1_index]
-            child_2_state=child_2_level.event_history[0][child_2_index]
-            if(child_1_state==1 or child_2_state==1):
-                q_bt+=1
+           # child_1_level=A.levels[child_1_level_index]
+           # child_2_level=A.levels[child_2_level_index]
+           # child_1_state=child_1_level.event_history[0][child_1_index]
+           # child_2_state=child_2_level.event_history[0][child_2_index]
+           # if(child_1_state==1 or child_2_state==1):
+           #     q_bt+=1
 
-            else:
-                q_bb+=1
+           # else:
+           #     q_bb+=1
+
 
         #end if statement making sure lineages are both boreal and non-migrating
     #end for-loop looping through all lineages in the specified level
-    return(q_bt, q_bb)                
+    return(q_bb, q_bt)                
 
 
-def ForwardProbMIG(A,sigma):
+def ForwardProbMIG(A,sigma,all_delta_earlier,all_delta_later):
     """
     Calculates the probability of all SBArrowT events which is equivalent to
     P(MIG(theta)|sigma)
@@ -94,12 +103,12 @@ def ForwardProbMIG(A,sigma):
     for level in range(2,n+1):
         l=GetLevelLength(A,level)
         k=GetNumberOfMigrationEvents(A,level)
-        (q_bb,q_bt)=GetQ_bbAndQ_bt(A,level)
+        (q_bb,q_bt)=GetQ_bbAndQ_bt(A,level,all_delta_earlier,all_delta_later)
         mult=mult*ProbKMigrationInL(level,l,k,q_bb,q_bt,sigma)
 
     return mult        
 
-def GetHBar(i,A,sigma):
+def GetHBar(i,A,sigma,all_delta_earlier,all_delta_later):
     """
     gives the sum of the rates of all possible speciation events in the level i
 
@@ -112,7 +121,7 @@ def GetHBar(i,A,sigma):
     -----------
     Sum of GetH(X,i,A,sigma) for X in {'s_tt,s_bb,s_bt'}
     """
-    return GetH('s_tt',i,A,sigma)+GetH('s_bb',i,A,sigma)+GetH('s_bt',i,A,sigma)
+    return GetH('s_tt',i,A,sigma,all_delta_earlier,all_delta_later)+GetH('s_bb',i,A,sigma,all_delta_earlier,all_delta_later)+GetH('s_bt',i,A,sigma,all_delta_earlier,all_delta_later)
 
 def GetYi(A,i):
     """
@@ -128,15 +137,16 @@ def GetYi(A,i):
     the speciation event that ends level i in Tree A, either s_tt, s_bb, or s_bt
     """
     n=A.num_leaves
-    level_i_event_history=A.levels[n-i].eventhistory
-    next_level_event_history=A.levels[n-(i+1)].eventhistory
+    level_i_event_history=A.levels[n-i].event_history
+    next_level_event_history=A.levels[n-(i+1)].event_history
     set_lineage_indices_level_i=set(level_i_event_history[0].keys())
     set_lineage_indices_next_level=set(next_level_event_history[0].keys())
     set_new_lineages_indices=set_lineage_indices_next_level.difference(set_lineage_indices_level_i)
     set_bifurcated_lineage_index=set_lineage_indices_level_i.difference(set_lineage_indices_next_level)
-    new_lineages_indices=[set_new_lineages.pop(),set_new_lineages.pop()]
-    bifurcated_lineage_index=[set_bifurcated_lineage_index.pop()]
-
+    new_lineages_indices=[set_new_lineages_indices.pop(),set_new_lineages_indices.pop()]
+    bifurcated_lineage_index=set_bifurcated_lineage_index.pop()
+    print(level_i_event_history[0][4])
+    print(bifurcated_lineage_index)
     character_bifurcated=level_i_event_history[0][bifurcated_lineage_index]
     character_new_1=next_level_event_history[0][new_lineages_indices[0]]
     character_new_2=next_level_event_history[0][new_lineages_indices[1]]
@@ -150,7 +160,7 @@ def GetYi(A,i):
     return ()    
     
     return ()
-def GetH(X,i,A,sigma):
+def GetH(X,i,A,sigma,all_delta_earlier,all_delta_later):
     """
     Gives the rate of event X in the ith level
     
@@ -165,7 +175,7 @@ def GetH(X,i,A,sigma):
     ------------
     the rate of event X in the ith level, where X is either STT, SBB or SBT
     """
-    (q_bb,q_bt)=GetQ_bbAndQ_bt(A,i)
+    (q_bb,q_bt)=GetQ_bbAndQ_bt(A,i,all_delta_earlier,all_delta_later)
     q_b_arrow_t=len(A.levels[i].event_history)-1
     r_t=i-q_b_arrow_t-q_bb-q_bt
     if(X=='s_tt'):
@@ -176,25 +186,26 @@ def GetH(X,i,A,sigma):
         return ForwardRateSBT((r_t,q_bb,q_b_arrow_t,q_bt),sigma)
     return ()
 
-def ForwardProbThetaAndBRLGivenMIG(A,sigma):
+def ForwardProbThetaAndBRLGivenMIG(A,sigma,all_delta_earlier,all_delta_later):
     """
     """
     n=GetNumberOfLevels(A)
-    for i in range(1,n):
-        l=GetLevelLength(A,i)
-        hbar_i=GetHBar(i,A,sigma)
-        Yi=GetYi(A,i)
-        mult=mult*hbar_i*math.exp(-hbar_i*l_i)*GetH(Y_i,i,A,sigma)/hbar_i
+    mult=1
+    for i in range(2,n+1):
+        l_i=GetLevelLength(A,i)
+        hbar_i=GetHBar(i,A,sigma,all_delta_earlier,all_delta_later)
+        Y_i=GetYi(A,i)
+        mult=mult*hbar_i*math.exp(-hbar_i*l_i)*GetH(Y_i,i,A,sigma,all_delta_earlier,all_delta_later)/hbar_i
 
     l_n=GetLevelLength(A,n)
-    hbar_n=GetHBar(n,A,sigma)
+    hbar_n=GetHBar(n,A,sigma,all_delta_earlier,all_delta_later)
     mult=mult*hbar_n*math.exp(-hbar_n*l_n)
     return mult
 
-def ForwardProbA(A,sigma):
+def ForwardProbA(A,sigma, all_delta_earlier,all_delta_later):
     """
     """
-    return ForwardProbThetaAndBRLGivenMIG(A,sigma)*ForwardProbMIG(A,sigma)
+    return ForwardProbThetaAndBRLGivenMIG(A,sigma,all_delta_earlier,all_delta_later)*ForwardProbMIG(A,sigma, all_delta_earlier,all_delta_later)
         
         
     
@@ -456,6 +467,7 @@ def LikelihoodOfParameters(G, delta, sigma):
 
     # very_large_number is analogous to k in the right side of Equation 8.
     very_large_number = 1000000
+    very_large_number=1
     sum_of_importance_sampling_weights = 0
 
     # This loop basically evaluates the rhs of Equation 8. 
@@ -470,14 +482,15 @@ def LikelihoodOfParameters(G, delta, sigma):
         # 
         # For example, IS could be the
         # distribution Upsilon in page 12, paragraph 2, line 3.
-        density_of_A = cjumpchain.SampleFromIS(G, delta, sigma,
-                transition_matrices, state_to_index_in_transition_matrices,index_in_transition_matrices_to_state) 
+        (density_of_A, all_delta_earlier,all_delta_later) = cjumpchain.SampleFromIS(G, delta, sigma,
+                (transition_matrices, state_to_index_in_transition_matrices,index_in_transition_matrices_to_state)) 
                     
         # SampleFromIS augments G with migration events. So A can now be
         # used in place of G.
         # calculate forward probability of A given sigma, Pr(A | sigma) 
         # according to the procedure described in Section 5.4.
-        forward_probability_of_A_given_sigma = ForwardProbA(A,sigma)
+        A=G
+        forward_probability_of_A_given_sigma = ForwardProbA(A,sigma,all_delta_earlier,all_delta_later)
 
         # It is guaranteed that density_of_A > 0
         importance_sampling_weight = forward_probability_of_A_given_sigma/density_of_A
