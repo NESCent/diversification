@@ -26,9 +26,10 @@ def GetNumberOfMigrationEvents(A,level):
     n=A.num_leaves
     current_level=A.levels[n-level]
     current_event_history=current_level.event_history
-    return len(event_history)-1
+    return len(current_event_history)-1
 
 def GetQ_bbAndQ_bt(A,level,all_delta_earlier,all_delta_later):
+    print("level "+str(level))
     n=A.num_leaves
     current_level=A.levels[n-level]
     current_event_history=current_level.event_history
@@ -40,20 +41,21 @@ def GetQ_bbAndQ_bt(A,level,all_delta_earlier,all_delta_later):
         #see if the lineages is a boreal lineage
         #and make sure the lineage does not undergo a q_b_arrow_t event
         if(current_event_history[0][current_lineage_index]==0 and all_delta_later[current_lineage_index]!=1):
+            print("current lineage index "+str(current_lineage.index))
             children=current_lineage.children
-            child_1=children[0]
-            child_2=children[1]
-            child_1_index=child_1.index
-            child_2_index=child_2.index
-
+            if(children!=[]):
+                child_1=children[0]
+                child_2=children[1]
+                child_1_index=child_1.index
+                child_2_index=child_2.index
+                print("children "+str(child_1_index)+" "+str(child_2_index))
+            print("first child state "+str(all_delta_earlier[child_1_index])+" other "+str(all_delta_earlier[child_2_index]))
             if(all_delta_earlier[child_1_index]==1 or all_delta_earlier[child_2_index]==1):
                 q_bt=q_bt+1
+                print("added to q_bt")
             if(all_delta_earlier[child_1_index]==0 and all_delta_earlier[child_2_index]==0):
                 q_bb=q_bb+1
-
-            else: # a marker that something is wrong
-                print('GetQ_bbAndQ_bt is not working properly')
-                return(-1)
+                print("added to q_bb")
                             
             #found="FALSE"
             #find the levels at which the two children lineages/nodes first appear
@@ -86,6 +88,7 @@ def GetQ_bbAndQ_bt(A,level,all_delta_earlier,all_delta_later):
 
         #end if statement making sure lineages are both boreal and non-migrating
     #end for-loop looping through all lineages in the specified level
+    print(str(q_bb)+" "+str(q_bt)+"q_bb and q_bt in "+str(level))
     return(q_bb, q_bt)                
 
 
@@ -100,11 +103,13 @@ def ForwardProbMIG(A,sigma,all_delta_earlier,all_delta_later):
     """
     # level is 1 here for no particular reason, just need n's value which is independent of level
     n=GetNumberOfLevels(A)
+    mult=1
     for level in range(2,n+1):
         l=GetLevelLength(A,level)
         k=GetNumberOfMigrationEvents(A,level)
-        (q_bb,q_bt)=GetQ_bbAndQ_bt(A,level,all_delta_earlier,all_delta_later)
-        mult=mult*ProbKMigrationInL(level,l,k,q_bb,q_bt,sigma)
+        if(k>0):
+            (q_bb,q_bt)=GetQ_bbAndQ_bt(A,level,all_delta_earlier,all_delta_later)
+            mult=mult*ProbKMigrationInL(A,level,l,k,q_bb,q_bt,sigma)
 
     return mult        
 
@@ -175,8 +180,10 @@ def GetH(X,i,A,sigma,all_delta_earlier,all_delta_later):
     ------------
     the rate of event X in the ith level, where X is either STT, SBB or SBT
     """
+    n=A.num_leaves
     (q_bb,q_bt)=GetQ_bbAndQ_bt(A,i,all_delta_earlier,all_delta_later)
-    q_b_arrow_t=len(A.levels[i].event_history)-1
+    print("level "+str(i))
+    q_b_arrow_t=len(A.levels[n-i].event_history)-1
     r_t=i-q_b_arrow_t-q_bb-q_bt
     if(X=='s_tt'):
         return ForwardRateSTT((r_t,q_bb,q_b_arrow_t,q_bt),sigma)
@@ -191,25 +198,28 @@ def ForwardProbThetaAndBRLGivenMIG(A,sigma,all_delta_earlier,all_delta_later):
     """
     n=GetNumberOfLevels(A)
     mult=1
-    for i in range(2,n+1):
+    for i in range(2,n):
         l_i=GetLevelLength(A,i)
         hbar_i=GetHBar(i,A,sigma,all_delta_earlier,all_delta_later)
         Y_i=GetYi(A,i)
         mult=mult*hbar_i*math.exp(-hbar_i*l_i)*GetH(Y_i,i,A,sigma,all_delta_earlier,all_delta_later)/hbar_i
 
-    l_n=GetLevelLength(A,n)
-    hbar_n=GetHBar(n,A,sigma,all_delta_earlier,all_delta_later)
-    mult=mult*hbar_n*math.exp(-hbar_n*l_n)
+    #l_n=GetLevelLength(A,n)
+    #hbar_n=GetHBar(n,A,sigma,all_delta_earlier,all_delta_later)
+    #mult=mult*hbar_n*math.exp(-hbar_n*l_n)
     return mult
 
 def ForwardProbA(A,sigma, all_delta_earlier,all_delta_later):
     """
-    """
-    return ForwardProbThetaAndBRLGivenMIG(A,sigma,all_delta_earlier,all_delta_later)*ForwardProbMIG(A,sigma, all_delta_earlier,all_delta_later)
+    """ 
+    a=ForwardProbThetaAndBRLGivenMIG(A,sigma,all_delta_earlier,all_delta_later)
+    b=ForwardProbMIG(A,sigma, all_delta_earlier,all_delta_later)
+    print("parts of Forward Prob A "+str(a)+" "+str(b))
+    return a*b
         
         
     
-def ProbKMigrationInL(level,l,k,q_bb,q_bt,sigma):
+def ProbKMigrationInL(A,level,l,k,q_bb,q_bt,sigma):
     """
     Returns the forward probability of the k migrations that occur in the level. Defined in equation 29.
     Input Parameters
@@ -226,13 +236,14 @@ def ProbKMigrationInL(level,l,k,q_bb,q_bt,sigma):
     """
     n=A.num_leaves
     coef=1
-    q_b_arrow_t=len(A.levels[n-i].event_history)-1
+    q_b_arrow_t=len(A.levels[n-level].event_history)-1
     r_t=level-q_b_arrow_t-q_bb-q_bt
     for i in range(1,k+1):
         coef=coef*Phi(i,(r_t,q_bb,q_b_arrow_t,q_bt),sigma)
     sum=0
     for j in range(1,k+1):
         sum=sum+PhiJK(j,k,(r_t,q_bb,q_b_arrow_t,q_bt),sigma)*math.exp(-Phi(j,(r_t,q_bb,q_b_arrow_t,q_bt),sigma)*l)                                                                   
+    print("prob k migrations in l for level "+str(level)+" is "+str(coef*sum))
     return coef*sum
 
 def PhiJK(j,k,(r_t,q_bb,q_b_arrow_t,q_bt),sigma):
@@ -491,7 +502,8 @@ def LikelihoodOfParameters(G, delta, sigma):
         # according to the procedure described in Section 5.4.
         A=G
         forward_probability_of_A_given_sigma = ForwardProbA(A,sigma,all_delta_earlier,all_delta_later)
-
+        print("forward "+str(forward_probability_of_A_given_sigma ))
+        print("density "+str(density_of_A))
         # It is guaranteed that density_of_A > 0
         importance_sampling_weight = forward_probability_of_A_given_sigma/density_of_A
         sum_of_importance_sampling_weights += importance_sampling_weight

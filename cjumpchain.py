@@ -67,10 +67,10 @@ def CombinationChoose2(list,allcomb,j):
     
 def LogFactorialOfNegative(z,terms=20):
     """
-    Returns an approximation of the log(factorial) of a negative number less than -1. 
+    Returns an approximation of the log(factorial) any real number that is not a non-positive integer
     Input paramters
     ---------------
-    n       any real number that is not a non-positive integer
+    z       any negative number that is greater than -1
     terms   the number of terms for which to carry out the approximation
 
     Return value
@@ -80,44 +80,45 @@ def LogFactorialOfNegative(z,terms=20):
 
     Details
     -------
-    If z+1 is negative:
-    First calculates log(-factorial(z)). Then returns 1/log(-factorial(z)). All
-    this is necessary because a log has to be taken of 1/z a the beginning of the
-    approximation, so that 1/z term cannot be negative (although z still is negative).
-    Otherwise, just calculates log(factorial(z))
-    """
+    If z+1 is negative: Make z positive for the calculations. Then if floor(z) is even, the approxiimation
+    would have been negative if carried out to a number of terms greater than floor(z),
+    so return 1/approx. Otherwise, if floor(z) is odd, the approximation would have
+    been positive if carried out to a number of terms greater than floor(z), so return approx.
+    I.E. log((-a)^even_num)=even_num*log(a); log((-a)^odd_num)=1/(odd_num*log(a))
+   """
+
     z=float(z)
     z=z+1
     if(z>0):
         fact=math.log(1/(z),10)
-        #fact=1/z
         for n in range(terms):
             n=n+1
             n=float(n)
             fact=fact+math.log(float(pow((1+1/n),z))/float(1+z/n),10)
-            #fact=fact*float(pow((1+1/n),z))/float(1+z/n)
         return fact
     if(z==0):
         return 1
     if(z<0):
-        fact=math.log(1/(-z),10)
-        #fact=1/z
+        z=-z
+        fact=math.log(1/(z),10)
         for n in range(terms):
             n=n+1
             n=float(n)
             fact=fact+math.log(float(pow((1+1/n),z))/float(1+z/n),10)
-            #fact=fact*float(pow((1+1/n),z))/float(1+z/n)
-        return 1/fact
+        if(math.fmod(math.floor(z),2)==0):
+            return 1/fact
+        else:
+            return fact
 
 def CombOfNegative(n,k):
     """
-    An approximation of the Combination function using FactorialOfNegative\
+    An approximation of the Combination function using FactorialOfNegative
 
     Input
     -----
-    n   any real number that is not a non-positive integer
-    k   any real number that is not a non-positive integer
-
+    n   any real number that is not a non-negative integer
+    k   any real number that is not a non-negative integer
+    
     Output
     ------
     n choose k
@@ -2594,18 +2595,24 @@ def PrepareTree():
     n6.parent = "None"
     
     l2 = Level()
+    l2.begin_time=4
+    l2.end_time=3
     l2.lineages = [n4,n5]
     l2.begin_node = n5
     l2.end_node = n6
     l2.event_history = []
     
     l3 = Level()
+    l3.begin_time=3
+    l3.end_time=2
     l3.lineages = [n4,n2,n3]
     l3.begin_node = n4
     l3.end_node = n5
     l3.event_history = []
     
     l4 = Level()             #the most recent level, aka the tips
+    l4.begin_time=2
+    l4.end_time=0
     l4.lineages = [n0,n1,n2,n3]
     l4.begin_node = n0
     l4.end_node = n4
