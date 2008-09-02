@@ -110,7 +110,7 @@ def LogFactorialOfNegative(z,terms=20):
         else:
             return fact
 
-def CombOfNegative(n,k):
+def CombOfNegative(n,k,terms=20):
     """
     An approximation of the Combination function using FactorialOfNegative
 
@@ -125,10 +125,10 @@ def CombOfNegative(n,k):
 
         
     """
-    log_n=LogFactorialOfNegative(n)
-    log_k=LogFactorialOfNegative(k)
+    log_n=LogFactorialOfNegative(n,terms)
+    log_k=LogFactorialOfNegative(k,terms)
     n_fact_over_k_fact=pow(10,log_n-log_k)
-    n_minus_k_fact=pow(10,LogFactorialOfNegative(n-k))
+    n_minus_k_fact=pow(10,LogFactorialOfNegative(n-k,terms))
     return n_fact_over_k_fact/n_minus_k_fact
     
 def GetEvents():

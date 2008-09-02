@@ -158,12 +158,12 @@ class TestCjumpchain(unittest.TestCase):
         self.assertAlmostEqual(x, 0.250000243178)
 
     def testLogFactorialOfNegative(self):
-        x=pow(10,cjumpchain.LogFactorialOfNegative(4))
+        x=pow(10,cjumpchain.LogFactorialOfNegative(4,10000))
         y=4*3*2*1
         self.assertAlmostEqual(x,y,1)
 
     def testCombOfNegative(self):
-        x=cjumpchain.CombOfNegative(5,2)
+        x=cjumpchain.CombOfNegative(5,2,10000)
         y=comb(5,2)
         self.assertAlmostEqual(x,y,1)
         
