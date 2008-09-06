@@ -131,8 +131,9 @@ class Level:
         self.lineages = []
         self.begin_node = None
         self.end_node = None
-        self.event_history = []                                     
-    
+        self.event_history = []  
+                                           
+    #Specify what the print function would print
     def __str__(self):
         return lineages
 
