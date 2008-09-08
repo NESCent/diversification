@@ -1906,19 +1906,19 @@ def PickNextStateofChain(row_of_transition_matrix):
     For instance, if the row_of_transition_matrix is [0,0,.33,0,.54,.12]
     then a possible output is (4,.54). Another possible output is (2,.33)
     """
-    #Got the idea from http://snippets.dzone.com/posts/show/732
-    #Randomly choose next state based on their weights. For instance, 
-    #array = [0,0,.33,0,.54,.12] would have weights 0<=x<=.33 corrspond to 
-    #array[2], .33<=x<.88 correspond to array[4], and .88<=x<1 corresponds 
-    #to array[5]
-    #n = random.uniform(0,1)
-    #for i in range(len(row_of_transition_matrix)): 
-    #    if (n < row_of_transition_matrix[i]):
-    #        return (i, row_of_transition_matrix[i])
-    #    n = n - row_of_transition_matrix[i]
-    n=random.uniform(0,1)
-    row_for_choosing=range(len(row_of_transition_matrix))
-    spot=0
+#    Got the idea from http://snippets.dzone.com/posts/show/732
+#    Randomly choose next state based on their weights. For instance, 
+#    array = [0,0,.33,0,.54,.12] would have weights 0<=x<=.33 corrspond to 
+#    array[2], .33<=x<.88 correspond to array[4], and .88<=x<1 corresponds 
+#    to array[5]
+    n = random.uniform(0,1)
+    for i in range(len(row_of_transition_matrix)): 
+        if (n < row_of_transition_matrix[i]):
+            return (i, row_of_transition_matrix[i])
+        n = n - row_of_transition_matrix[i]
+    return n
+#    row_for_choosing=range(len(row_of_transition_matrix))
+#    spot=0
     #don't have to worry about row_of_transition_matrix=[.25,.25,.5,0], row_for_choosing=[.25,.5,1,1]
     #If n randomly equals 1,
     #and the the third "if statement" is 1<=1<=1, you might think the code falsly chooses the 3rd index, 4th spot in
@@ -1926,21 +1926,26 @@ def PickNextStateofChain(row_of_transition_matrix):
     #first, .5<=1<1, correctly choosing the 2nd index, 3rd spot in row_of_transition_matrix. Or say,
     #row_of_transition_matrix=[.25,.25,0,.5], row_for_choosing=[.25,.5,.5,1] and n=.5. The code would return
     #(1, row_of_transition_matrix[1]) before it got to i=2, and even if it did get to i=2, it is not true that .5<=.5<.5. 
-    for i in range(len(row_of_transition_matrix)):
-        spot+=row_of_transition_matrix[i]
-        row_for_choosing[i]=spot
+#    for i in range(len(row_of_transition_matrix)):
+#        spot+=row_of_transition_matrix[i]
+#        row_for_choosing[i]=spot
+#
+#    for i in range(len(row_for_choosing)):
+#        if(i==0):
+#            if(0<=n<row_for_choosing[i]):
+#                return (i, row_of_transition_matrix[i])
+#        if(i==(len(row_for_choosing)-1)):
+#            if(row_for_choosing[i]<=n<=1):
+#                return (i, row_of_transition_matrix[i])
+#        if(row_for_choosing[i-1]<=n<row_for_choosing[i]):
+#                return (i, row_of_transition_matrix[i])
 
-    for i in range(len(row_for_choosing)):
-        if(i==0):
-            if(0<=n<row_for_choosing[i]):
-                return (i, row_of_transition_matrix[i])
-        if(i==(len(row_for_choosing)-1)):
-            if(row_for_choosing[i]<=n<=1):
-                return (i, row_of_transition_matrix[i])
-        if(row_for_choosing[i-1]<=n<row_for_choosing[i]):
-                return (i, row_of_transition_matrix[i])
-
-    return -1            
+    #Perry: Tally, random(0,1) actually generates a number 
+    #from 0<= x < 1. See: http://docs.python.org/lib/module-random.html
+    #Furthermore, if row=[.25,.25,0,.5], and n=.5, then we 
+    #should return (3,.5) b/c
+    #0<=x<.25 go into slot 0, .25<=x<.5 go into slot 1, and .5<=x<1 go into 
+    #slot 3. This way it's truly "uniformly" distributed.           
 
         
 def WhetherInTheSameLevel(state1, state2):
@@ -2094,23 +2099,32 @@ def MovetoNextLevel(current_state, current_delta, all_delta_earlier, all_delta_l
     
     
     if (x_1==0 and x_2==0): #sbb
-        current_delta.update({new_index:0})
-        all_delta_earlier.update({new_index:0})
-        all_delta_later.update({new_index:0})
+#        current_delta.update({new_index:0})
+#        all_delta_earlier.update({new_index:0})
+#        all_delta_later.update({new_index:0})
+        current_delta[new_index]=0
+        all_delta_earlier[new_index]=0
+        all_delta_later[new_index]=0
         assert(q_t>=1)#this should be a given by the structure of the transition matrix
         if (q_t >= 1):
             return ((q_t-1, r_t, current_delta[next_x_1_index], current_delta[next_x_2_index]),current_delta,all_delta_earlier,all_delta_later)
     if (x_1==1 and x_2==1):#stt
-        current_delta.update({new_index:1})
-        all_delta_earlier.update({new_index:1})
-        all_delta_later.update({new_index:1})
+#        current_delta.update({new_index:1})
+#        all_delta_earlier.update({new_index:1})
+#        all_delta_later.update({new_index:1})
+        current_delta[new_index]=1
+        all_delta_earlier[new_index]=1
+        all_delta_later[new_index]=1
         assert(r_t>=1)#this should be a given by the structure of the transition matrix
         if (r_t >= 1):
             return ((q_t, r_t-1, current_delta[next_x_1_index], current_delta[next_x_2_index]),current_delta,all_delta_earlier,all_delta_later)
     if ((x_1==1 and x_2==0) or(x_1==0 and x_2==1)):#sbt
-        current_delta.update({new_index:0})
-        all_delta_earlier.update({new_index:0})
-        all_delta_later.update({new_index:0})
+#        current_delta.update({new_index:0})
+#        all_delta_earlier.update({new_index:0})
+#        all_delta_later.update({new_index:0})
+        current_delta[new_index]=0
+        all_delta_earlier[new_index]=0
+        all_delta_later[new_index]=0
         #(1,0) --> 0 so r_t decreases by 1
         assert(r_t>=1)
         if (r_t >=1):#this should be a given by the structure of the transition matrix
@@ -2206,7 +2220,7 @@ def SampleFromIS(G, delta, sigma, (transition_matrices, state_to_index_in_transi
         level instance is created. This (the current) function
         populates the event history.
 
-        Suppose level = 4, and that there are 4 lineaages 1, 2, 3, & 4.
+        Suppose level = 4, and that there are 4 lineages 1, 2, 3, & 4.
         And let the character state assignments be {1:0, 2:1, 3:1,
         4:1}. And let following events happen before the chain goes to
         level 3:
@@ -2518,9 +2532,10 @@ def PrepareTree():
                /     \
               /       \
              /         n5
-            n4         / \
-           /  \       /   \
-          n0  n1     n2    n3
+            /          /\
+           n4         /  \
+          /  \       /    \
+        n0   n1     n2    n3
 
     3 levels: from top: 2,3,4
 
@@ -2595,23 +2610,23 @@ def PrepareTree():
     n6.parent = "None"
     
     l2 = Level()
-    l2.begin_time=4
-    l2.end_time=3
+    l2.begin_time=-4
+    l2.end_time=-3
     l2.lineages = [n4,n5]
     l2.begin_node = n5
     l2.end_node = n6
     l2.event_history = []
     
     l3 = Level()
-    l3.begin_time=3
-    l3.end_time=2
+    l3.begin_time=-3
+    l3.end_time=-2
     l3.lineages = [n4,n2,n3]
     l3.begin_node = n4
     l3.end_node = n5
     l3.event_history = []
     
     l4 = Level()             #the most recent level, aka the tips
-    l4.begin_time=2
+    l4.begin_time=-2
     l4.end_time=0
     l4.lineages = [n0,n1,n2,n3]
     l4.begin_node = n0
@@ -2632,11 +2647,13 @@ def PrepareTree():
     return x
     
 if __name__ == "__main__":
-    G = PrepareTree()
-    level_number = 4
-    migration_type = "smaller_s_b_arrow_t"
-    current_delta = [1,0,1,1]
-    lineage = ChooseLineageandUpdateDelta(G, level_number, migration_type, current_delta)
+#    G = PrepareTree()
+#    level_number = 4
+#    migration_type = "smaller_s_b_arrow_t"
+#    current_delta = [1,1,0,1]
+#    lineage = ChooseLineageandUpdateDelta(G, level_number, migration_type, current_delta, all_delta_earlier)
     #we expect current_delta to be [1,0,0,1]
     #and lineage = 2
-    print lineage
+    d = {3:"nice", 1:"coolio", 5:"wow", 2:"thankyou"}
+    d.update({3:"wowowowo"})
+    print d
