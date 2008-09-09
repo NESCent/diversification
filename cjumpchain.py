@@ -2028,8 +2028,9 @@ def ChooseLineageandUpdateDelta(G, level_number, migration_type, current_delta, 
         #So first delete next_coalescing_lineages from consideration and those lineages
         #whose state is already 0o
         random_list = []
-        for i in current_delta.keys():
+        for i in range(len(current_delta)):
             if (i != next_coalescing_lineages[0].index and i != next_coalescing_lineages[1].index and current_delta[i]!=0):
+                #print "this is next_coalescing lineage" + str(i)
                 random_list.append(i)
         #so in our example, newlist becomes [0,1] b/c besides
         #the next_coalescing_lineages 3 and 4, lineages 0 and 1 would
@@ -2094,6 +2095,13 @@ def MovetoNextLevel(current_state, current_delta, all_delta_earlier, all_delta_l
     assert(next_level.begin_node.index==current_level.end_node.index)#just a check
     new_index=next__level_speciating_lineage_index
     
+    print current_x_1_index
+    print current_x_2_index
+    print next_x_1_index
+    print next_x_2_index
+    print next__level_speciating_lineage_index
+    print new_index
+    
     current_delta.pop(current_x_1_index)
     current_delta.pop(current_x_2_index)
     
@@ -2102,6 +2110,8 @@ def MovetoNextLevel(current_state, current_delta, all_delta_earlier, all_delta_l
 #        current_delta.update({new_index:0})
 #        all_delta_earlier.update({new_index:0})
 #        all_delta_later.update({new_index:0})
+        del current_delta[current_x_1_index]
+        del current_delta[current_x_2_index]
         current_delta[new_index]=0
         all_delta_earlier[new_index]=0
         all_delta_later[new_index]=0
@@ -2647,13 +2657,21 @@ def PrepareTree():
     return x
     
 if __name__ == "__main__":
-#    G = PrepareTree()
-#    level_number = 4
-#    migration_type = "smaller_s_b_arrow_t"
-#    current_delta = [1,1,0,1]
-#    lineage = ChooseLineageandUpdateDelta(G, level_number, migration_type, current_delta, all_delta_earlier)
+    G = PrepareTree()
+    level_number = 4
+    migration_type = "m_2"
+    current_delta = [1,1,0,1]
+    all_delta_earlier = [1,1,0,1]
+    lineage = ChooseLineageandUpdateDelta(G, level_number, migration_type, current_delta, all_delta_earlier)
     #we expect current_delta to be [1,0,0,1]
     #and lineage = 2
-    d = {3:"nice", 1:"coolio", 5:"wow", 2:"thankyou"}
-    d.update({3:"wowowowo"})
-    print d
+    print lineage
+    
+    current_state = (5, 2, 1, 1)
+    current_delta = [1,1,0,1]
+    all_delta_earlier = {0:1, 1:1, 2:0, 3:1}
+    all_delta_later = {0:1, 1:1, 2:0, 3:1}
+    current_level = G.levels[0]
+    next_level = G.levels[1]
+    result = MovetoNextLevel(current_state, current_delta, all_delta_earlier, all_delta_later, current_level, next_level)
+    
