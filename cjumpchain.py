@@ -70,7 +70,7 @@ def LogFactorialOfNegative(z,terms=20):
     Returns an approximation of the log(factorial) any real number that is not a non-positive integer
     Input paramters
     ---------------
-    z       any negative number that is greater than -1
+    z       any number that is not a non-positive integer
     terms   the number of terms for which to carry out the approximation
 
     Return value
@@ -100,6 +100,7 @@ def LogFactorialOfNegative(z,terms=20):
         return 1
     if(z<0):
         z=-z
+        #above line * for future reference
         fact=math.log(1/(z),10)
         for n in range(terms):
             n=n+1
@@ -107,17 +108,22 @@ def LogFactorialOfNegative(z,terms=20):
             fact=fact+math.log(float(pow((1+1/n),z))/float(1+z/n),10)
         if(math.fmod(math.floor(z),2)==0):
             return 1/fact
+            #because there is one more negative term in *
         else:
             return fact
+            #because * makes the total number of negative #s multiplied even
 
-def CombOfNegative(n,k,terms=20):
+def CombOfNegative(n,k,terms=1000):
     """
     An approximation of the Combination function using FactorialOfNegative
 
     Input
     -----
-    n   any real number that is not a non-negative integer
-    k   any real number that is not a non-negative integer
+    n   any real number that is not a non-negative integer and such that n-k is not
+        a non-negative integer
+    k   any real number that is not a non-negative integer and such that n-k is not
+        a non-negative integer
+        
     
     Output
     ------
@@ -125,12 +131,12 @@ def CombOfNegative(n,k,terms=20):
 
         
     """
-    log_n=LogFactorialOfNegative(n,terms)
-    log_k=LogFactorialOfNegative(k,terms)
-    n_fact_over_k_fact=pow(10,log_n-log_k)
-    n_minus_k_fact=pow(10,LogFactorialOfNegative(n-k,terms))
-    return n_fact_over_k_fact/n_minus_k_fact
-    
+    log_n_fact=LogFactorialOfNegative(n,terms)
+    log_k_fact=LogFactorialOfNegative(k,terms)
+    log_n_fact_over_k_fact=log_n_fact-log_k_fact
+    log_n_minus_k_fact=LogFactorialOfNegative(n-k,terms)
+    return  pow(10,log_n_fact_over_k_fact-log_n_minus_k_fact)
+
 def GetEvents():
     """
     Returns sets of various types of events (or equivalently, state
@@ -223,7 +229,7 @@ def MakeTupleList(level_number):
     j=0
     for i in range(level_number+1):
         if((i!=0)&(i!=1)):
-            tuples[i-2]=(i,level_number-i,0,0) #A tuple is represented by (), not [], as before
+            tuples[i-2]=(i,level_number-i,0,0) 
 
     for i in range(level_number+1):
         if((i!=0)&(i!=level_number)):
@@ -1066,7 +1072,8 @@ def UncondProbSBTGlobal(current_state_for_uncond_probs, sigma, num_sum=20):
     for k in range(r_t,r_t+num_sum):
         if (k!=0):
             #if k==0, then we don't want to divide by 0.
-            sum=sum+CalculatePi(k-1,sigma)/k           
+            sum=sum+CalculatePi(k-1,sigma)/k
+            
     return coef*sum
 
 def UncondProbSBarrowTGlobal(current_state_for_uncond_probs, sigma, num_sum=20):    
@@ -2028,7 +2035,7 @@ def ChooseLineageandUpdateDelta(G, level_number, migration_type, current_delta, 
         #So first delete next_coalescing_lineages from consideration and those lineages
         #whose state is already 0o
         random_list = []
-        for i in range(len(current_delta)):
+        for i in current_delta.keys():
             if (i != next_coalescing_lineages[0].index and i != next_coalescing_lineages[1].index and current_delta[i]!=0):
                 #print "this is next_coalescing lineage" + str(i)
                 random_list.append(i)
