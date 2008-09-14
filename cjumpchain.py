@@ -229,24 +229,25 @@ def MakeTupleList(level_number):
     j=0
     for i in range(level_number+1):
         if((i!=0)&(i!=1)):
-            tuples[i-2]=(i,level_number-i,0,0) 
+            tuples[i-2]=(i,level_number-i,0,0)
+            #print(i-2)
 
     for i in range(level_number+1):
         if((i!=0)&(i!=level_number)):
             j=(i-1)+1*(level_number-1)
-           
+            #print(j)
             tuples[j]=(i,level_number-i,0,1)
         
     for i in range(level_number+1):
         if((i!=level_number-1)&(i!=level_number)):
             j=i+2*(level_number-1)
-           
+            #print(j)
             tuples[j]=(i,level_number-i,1,1)
 
     for i in range(level_number+1):
         if((i!=0)&(i!=level_number)):
             j=(i-1)+3*(level_number-1)
-            
+            #print(j)
             tuples[j]=(i,level_number-i,1,0)
         
     return(tuples)
