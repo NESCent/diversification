@@ -2107,34 +2107,26 @@ def MovetoNextLevel(current_state, current_delta, all_delta_earlier, all_delta_l
     
     
     if (x_1==0 and x_2==0): #sbb
-#        current_delta.update({new_index:0})
-#        all_delta_earlier.update({new_index:0})
-#        all_delta_later.update({new_index:0})
-        del current_delta[current_x_1_index]
-        del current_delta[current_x_2_index]
-        current_delta[new_index]=0
-        all_delta_earlier[new_index]=0
-        all_delta_later[new_index]=0
+        current_delta.update({new_index:0})
+        all_delta_earlier.update({new_index:0})
+        all_delta_later.update({new_index:0})
+
         assert(q_t>=1)#this should be a given by the structure of the transition matrix
         if (q_t >= 1):
             return ((q_t-1, r_t, current_delta[next_x_1_index], current_delta[next_x_2_index]),current_delta,all_delta_earlier,all_delta_later)
     if (x_1==1 and x_2==1):#stt
-#        current_delta.update({new_index:1})
-#        all_delta_earlier.update({new_index:1})
-#        all_delta_later.update({new_index:1})
-        current_delta[new_index]=1
-        all_delta_earlier[new_index]=1
-        all_delta_later[new_index]=1
+        current_delta.update({new_index:1})
+        all_delta_earlier.update({new_index:1})
+        all_delta_later.update({new_index:1})
+
         assert(r_t>=1)#this should be a given by the structure of the transition matrix
         if (r_t >= 1):
             return ((q_t, r_t-1, current_delta[next_x_1_index], current_delta[next_x_2_index]),current_delta,all_delta_earlier,all_delta_later)
     if ((x_1==1 and x_2==0) or(x_1==0 and x_2==1)):#sbt
-#        current_delta.update({new_index:0})
-#        all_delta_earlier.update({new_index:0})
-#        all_delta_later.update({new_index:0})
-        current_delta[new_index]=0
-        all_delta_earlier[new_index]=0
-        all_delta_later[new_index]=0
+        current_delta.update({new_index:0})
+        all_delta_earlier.update({new_index:0})
+        all_delta_later.update({new_index:0})
+
         #(1,0) --> 0 so r_t decreases by 1
         assert(r_t>=1)
         if (r_t >=1):#this should be a given by the structure of the transition matrix
