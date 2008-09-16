@@ -1,0 +1,138 @@
+Main Code
+---------
+
+1. Line 340: 
+
+    - Indentation error (one tab too
+      many)
+
+    - Calculation of P is wrong; 
+      P should be calculated as P =
+      f_turnover+((n_tropical+1)*(f_brate+f_drate))+f_mrate, where
+      n_tropical  is the number of species in the tropical region
+      currently. n_tropical is not currently a variable used in bd_m.py;
+      but it should be introduced, and it should be used to track the
+      #species  in the tropics during the for loop in line 338.
+
+2. Line 348:
+
+    - Indentation error (one tab too many). This "if" should be at the same
+      level as the "elif"s in line 370 and 387, and the "else" in line 398.
+
+3. Lines 350, 352, 360, 361, 372, 374, 389, 391, 400, 402
+    
+    - Indentation error (one tab too many). 
+
+4. Lines 295, 296: comment is incorrect. Based on the comment, it would
+appear that *all* the inter-event times are first simulated, even before
+the population simulation. But the main simulation for-loop at line 338
+does it differently: the population simulation and the inter-event
+simulation go hand in hand. So: fix Step1, Step2 and Step3 in the comment
+to reflect what is actually happening in the code.
+
+function Migration
+------------------
+
+5. Line 40
+    
+    - Indentation error (one tab too many). 
+
+6. Line 39 & Line 40
+    
+    - The comment and the code don't match: note that the comment in line
+      39 has a '1' at the end, whereas the actual code in line 40 has a
+      '-1'.
+
+	  39:  # In the event history of the neotropical region, add an event as [event #, time of event, -1,-1,1].
+      40:      I_event1.append([i_temp1+2,f_times,-1,-1,-1])
+    
+      By the way, I don't understand putting -1, -1, -1
+
+function Birth 
+--------------
+
+16. Line 50: the definition has to be changed to take both i_count_species
+    and i_count_events as parameters, like this:
+    "def Birth(c_pop,y,i_count,f_times,I_event,ch_pop):"
+
+    - also change comments in Lines 46-59 to reflect the above change.
+
+17. Lines 58, 60, 65, 67: use i_count_species instead of i_count.
+
+18. Line 100. Use i_count_events instead of i_count.
+
+7. Between Lines 72 & 73: introduce "assert len(I_event) == 1". 
+    - Basically,
+      it seems like I_event should have only one element at the time of the
+      first birth, apart from I_event[0][1] being 0. The latter condition is
+      used as a check for first birth. The assert will make sure that the
+      second condition also holds.
+
+15. Again between Lines 72 & 73: it seems like len(c_pop) == 2 should hold
+    at this point. So place an assert to this effect here.
+
+
+function Death
+--------------
+
+
+
+function CreatePopulation
+-------------------------
+
+8. Line 164 & 166: 
+
+    -  For the formula calculating f_times in line 166 to work as intended,
+       i_count should be tracking the number of species. But as it is,
+       i_count is not tracking the number of species, but the number of
+       events. 
+
+       I think this is true because, (a) only the number of events can
+       increase monotonously (b) i_count ranges from (0,
+       i_pop_size), and (c) looking at lines 324 and 327 where
+       CreatePopulation is called, i_pop_size is either i_bor_size (line
+       324) or i_neo_size (line 326); and based on lines 268 and 270
+       respectively, i_bor_size and i_neo_size are numbers of events and
+       not population sizes.
+
+       I think the best thing to will be: rename i_pop_size as
+       i_total_num_events. Then rename i_count as i_count_events; and
+       introduce a new variable i_count_species to track the number of
+       species. This i_count_species should be used in line 166.
+       
+9. Line 175: This comment should be "y is the index of the organism
+   undergoing event." 
+
+        - NOTE: IGNORE THIS CORRECTION. THIS HAS BEEN SUPERCEDED BY A LATER
+          CORRECTION (SEE #14)
+ 
+10. Line 180: Use i_count_species instead of i_count.
+
+11. Lines 185, 187. 
+      - Use i_count_species instead of i_count
+      This has the effect merely of changing species names. Under the
+      previous scheme, the set of starting species in a region after
+      invoking CreatePopulation could be {0, 1, 2, 3, 5}. Using
+      i_count_species will have the effect of making the species numbers
+      consectutive.
+
+      - Also pass a new parameter i_count_events to Birth
+
+12. Lines 192, 194: Use i_count_events instead of i_count. 
+
+    - Based on the comment in line 112, the called function Death seems to
+      use the i_count parameter to assign a number (= i_count+1) to the
+      Death event. This is also borne out from the examples that I worked
+      out. TODO: check the code to make sure this understanding is correct.
+
+13. Note on line 176 (but no change needed). 
+    - x is a uniform random variable in (0, 1)
+    - y takes values from [1, 2, ..., len(c_pop)]
+    - In the called functions Birth and Death, y-1 is taken to be the index
+      in c_pop of the species undergoing the event (Birth or Death
+      respectively). Since y-1 \in [0, 1, ..., len(c_pop)-1] there will be
+      out of bound errors in accessing the species in c_pop undergoing the
+      event.
+
+14. Line 175. The comment needs to be changed to "y-1 is the index of the
+    organism undergoing the event," based on the note on Line 180 above.
