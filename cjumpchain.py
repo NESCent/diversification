@@ -525,7 +525,6 @@ def ApplyEvent(z,w,level):
         tuple = (q_t+1,r_t-1,x_1,x_2)
         if (IsValidState(tuple,level)==False):
             return (-1,-1,-1,-1)
-        print(tuple)
         return tuple
        
     return (-1,-1,-1,-1)
@@ -1938,14 +1937,7 @@ def PickNextStateofChain(row_of_transition_matrix):
 #    array = [0,0,.33,0,.54,.12] would have weights 0<=x<=.33 corrspond to 
 #    array[2], .33<=x<.88 correspond to array[4], and .88<=x<1 corresponds 
 #    to array[5]
-    n = random.uniform(0,1)
-    for i in range(len(row_of_transition_matrix)): 
-        if (n < row_of_transition_matrix[i]):
-            return (i, row_of_transition_matrix[i])
-        n = n - row_of_transition_matrix[i]
-    return n
-#    row_for_choosing=range(len(row_of_transition_matrix))
-#    spot=0
+
     #don't have to worry about row_of_transition_matrix=[.25,.25,.5,0], row_for_choosing=[.25,.5,1,1]
     #If n randomly equals 1,
     #and the the third "if statement" is 1<=1<=1, you might think the code falsly chooses the 3rd index, 4th spot in
@@ -1953,20 +1945,37 @@ def PickNextStateofChain(row_of_transition_matrix):
     #first, .5<=1<1, correctly choosing the 2nd index, 3rd spot in row_of_transition_matrix. Or say,
     #row_of_transition_matrix=[.25,.25,0,.5], row_for_choosing=[.25,.5,.5,1] and n=.5. The code would return
     #(1, row_of_transition_matrix[1]) before it got to i=2, and even if it did get to i=2, it is not true that .5<=.5<.5. 
-#    for i in range(len(row_of_transition_matrix)):
-#        spot+=row_of_transition_matrix[i]
-#        row_for_choosing[i]=spot
-#
-#    for i in range(len(row_for_choosing)):
-#        if(i==0):
-#            if(0<=n<row_for_choosing[i]):
-#                return (i, row_of_transition_matrix[i])
-#        if(i==(len(row_for_choosing)-1)):
-#            if(row_for_choosing[i]<=n<=1):
-#                return (i, row_of_transition_matrix[i])
-#        if(row_for_choosing[i-1]<=n<row_for_choosing[i]):
-#                return (i, row_of_transition_matrix[i])
 
+    n = random.uniform(0,1)
+   # for i in range(len(row_of_transition_matrix)): 
+   #     if (n < row_of_transition_matrix[i]):
+   #         return (i, row_of_transition_matrix[i])
+   #     n = n - row_of_transition_matrix[i]
+   # return n
+   
+    spot=0
+    row_for_choosing=range(len(row_of_transition_matrix))
+    print("row of transition matrix")
+    print(row_of_transition_matrix)
+    for i in range(len(row_of_transition_matrix)):
+        spot+=row_of_transition_matrix[i]
+        row_for_choosing[i]=spot
+
+    for i in range(len(row_for_choosing)):
+        if(i==0):
+            if(0<=n<row_for_choosing[i]):
+                return (i, row_of_transition_matrix[i])
+        if(i==(len(row_for_choosing)-1)):
+            if(row_for_choosing[i]<=n<=1):
+                return (i, row_of_transition_matrix[i])
+        if(row_for_choosing[i-1]<=n<row_for_choosing[i]):
+                return (i, row_of_transition_matrix[i])
+            
+    #Tally: Perry, the code I wrote already works the way you explained below. 
+    #I changed this back to my implementation b/c I was
+    #getting errors with the other implementation. I am adding this comment
+    #in the log. From now on, please put comments in the log.
+    
     #Perry: Tally, random(0,1) actually generates a number 
     #from 0<= x < 1. See: http://docs.python.org/lib/module-random.html
     #Furthermore, if row=[.25,.25,0,.5], and n=.5, then we 
@@ -2122,12 +2131,12 @@ def MovetoNextLevel(current_state, current_delta, all_delta_earlier, all_delta_l
     assert(next_level.begin_node.index==current_level.end_node.index)#just a check
     new_index=next__level_speciating_lineage_index
     
-    print current_x_1_index
-    print current_x_2_index
-    print next_x_1_index
-    print next_x_2_index
-    print next__level_speciating_lineage_index
-    print new_index
+    #print current_x_1_index
+    #print current_x_2_index
+    #print next_x_1_index
+    #print next_x_2_index
+    #print next__level_speciating_lineage_index
+    #print new_index
     
     current_delta.pop(current_x_1_index)
     current_delta.pop(current_x_2_index)
@@ -2491,9 +2500,11 @@ def SampleFromIS(G, delta, sigma, (transition_matrices, state_to_index_in_transi
 
         whether_in_the_same_level = "True"
         while whether_in_the_same_level == "True":
+            print("got here")
             # pick a next state to transition to such that 
             # Pr(index of next state = j | index of current state = index_of_current_state) = transition_matrix_for_the_level[index_of_current_state][j]
             (index_of_next_state, probability_of_transition) = PickNextStateofChain(transition_matrix_for_the_level[index_of_current_state])
+            print("prob 1 "+str(index_of_next_state)+" "+str(probability_of_transition))
             print("current_state "+str(state_of_cond_jump_chain))
             if(index_of_next_state==len(index_in_transition_matrix_to_state)):
                 whether_in_the_same_level = "False"
@@ -2551,7 +2562,9 @@ def SampleFromIS(G, delta, sigma, (transition_matrices, state_to_index_in_transi
                     state_of_cond_jump_chain = initial_state_in_the_next_level
                     # update current level number
                 current_level_number=next_level_number
+    
             probability_of_history = probability_of_history * probability_of_transition
+            print("prob 2"+str(probability_of_history))
 
     return(probability_of_history,all_delta_earlier, all_delta_later)            
 
@@ -2684,7 +2697,7 @@ if __name__ == "__main__":
     lineage = ChooseLineageandUpdateDelta(G, level_number, migration_type, current_delta, all_delta_earlier)
     #we expect current_delta to be [1,0,0,1]
     #and lineage = 2
-    print lineage
+    #print lineage
     
     current_state = (5, 2, 1, 1)
     current_delta = [1,1,0,1]
