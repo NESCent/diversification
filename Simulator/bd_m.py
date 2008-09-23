@@ -32,13 +32,13 @@ def Migration(c_pop,y,f_times,I_event,c_pop1,I_event1):
 	    i_temp = len(I_event)-1
 	    i_temp1= len(I_event1)-1
 	    # For a description of what the entries in the I_event array represent, look in "MAIN CODE"
-            # Adding the event to the boreal region as [event #,time of event,-1,-1,-1].
+        # Adding the event to the boreal region as [event #,time of event,-1,-1,-1].
 	    I_event.append([i_temp+2,f_times,-1,-1,-1])
 	    # Add a copy of the migrating organism to the neotropical region
 	    c_pop1.append([c_pop[y-1][0],-1,0])
-	    # In the event history of the neotropical region, add an event as [event #, time of event, -1,-1,1].
-            I_event1.append([i_temp1+2,f_times,-1,-1,-1])
-            # return the updated population and event history arrays for both regions
+	    # In the event history of the neotropical region, add an event as [event #, time of event, -1,-1,-1].
+	    I_event1.append([i_temp1+2,f_times,-1,-1,-1])
+        # return the updated population and event history arrays for both regions
 	    return (c_pop, I_event,c_pop1,I_event1)
 # end of function Migration
 
@@ -47,61 +47,60 @@ def Migration(c_pop,y,f_times,I_event,c_pop1,I_event1):
 # event history (I_event), ch_pop is equal to "bor" if the birth is happening in the boreal region and "neo"
 # if it is happening in the neotropical region.
 #  RETURNS updated population array (c_pop) and event history array (I_event)
-def Birth(c_pop,y,i_count,f_times,I_event,ch_pop):
-	   # i_temp is the number of events so far - 1 
-	   i_temp = len(I_event)-1
-	   # If there is at least one species already in the population c_pop,
-           # add new species to c_pop.
-	   if len(c_pop) > 0:
-           	print c_pop[y-1][0],'undergoes birth.'
+def Birth(c_pop, y, i_count_species, i_count_events, f_times,I_event,ch_pop):
+	# i_temp is the number of events so far - 1 
+	i_temp = len(I_event)-1
+	# If there is at least one species already in the population c_pop,
+	# add new species to c_pop.
+	if len(c_pop) > 0:
+		print c_pop[y-1][0],'undergoes birth.'
 		if ch_pop == "bor":
-                	c_pop.append([i_count+1,-1,0])
+			c_pop.append([i_count_species + 1,-1,0])
 		else:
-			c_pop.append([i_count+1,-1,1]) 
-           # Otherwise, put the first element into c_pop
-           else:
-                print 'A birth took place' 
+			c_pop.append([i_count_species + 1,-1,1]) 
+		# Otherwise, put the first element into c_pop
+		print 'A birth took place' 
+	else:
 		if ch_pop == "bor":
-                	c_pop = [[i_count+1,-1,0]]
+			c_pop = [[i_count_species+1,-1,0]]
 		else:
-			c_pop = [[i_count+1,-1,1]] 
-           #print 'Inter-event time:',f_times,'seconds. Species:', c_pop, '.'
-
-           # Update I_event to have event time, left and right children
-           # if first event (that is, time of latest event is 0), 
-           if I_event[0][1] == 0:
-                # set event time to be f_times
-	        I_event[0][1]=f_times;
+		    c_pop = [[i_count_species+1,-1,1]] 
+		    #print 'Inter-event time:',f_times,'seconds. Species:', c_pop, '.'
+		    # Update I_event to have event time, left and right children
+		    # if first event (that is, time of latest event is 0), 
+		    if I_event[0][1] == 0:
+		    	# set event time to be f_times
+		    	I_event[0][1]=f_times;
                 # set left child of event to be first species in c_pop
-	        I_event[0][2]=c_pop[0][0]
+                I_event[0][2]=c_pop[0][0]
                 # if c_pop has at least 2 species, set right child of event to be second species in c_pop
 		if len(c_pop) > 1:
 			I_event[0][3]=c_pop[1][0]
-	   else:
-                # otherwise, append the event to the event history:
-                # i_iter  is the number of events so far - 1
+	else:
+		# otherwise, append the event to the event history:
+		# i_iter  is the number of events so far - 1
 		i_iter=len(I_event)-1
-                i_check=0
-                i_found=-1
-                if (y-1) >=0: 
+		i_check=0
+		i_found=-1
+		if (y-1) >=0: 
 			# Find the most recent event that has the species undergoing birth as its left/right child
 			# Set i_found to point to that event - this is the index of the parent node in the tree for
 			# the latest event due to the birth. If there is no parent node, i_found stays as -1.
-           		while i_iter >=0  and i_check==0:
+			while i_iter >=0  and i_check==0:
 				if I_event[i_iter][2]==c_pop[y-1][0] or I_event[i_iter][3]==c_pop[y-1][0]:
 					i_found = I_event[i_iter][0]
-                        		i_check=1
+                    i_check=1
 
 				else:
 					i_iter=i_iter-1
 		#print 'Event history',I_event[i_count-1][1]+f_times,'c_pop',c_pop[y-1][0]
 		
 		# Append event: ([event #, event time, left child = y-1 (species undergoing birth), right child = i_count+1, parent node (i_found)])
-		I_event.append([i_count+1,f_times,c_pop[y-1][0],i_count+1,i_found])
+		I_event.append([i_count_events+1,f_times,c_pop[y-1][0],i_count+1,i_found])
 
-           #print 'Event history:',I_event,'\n'
-	   # return the updated population and event history arrays
-	   return (c_pop, I_event)
+        #print 'Event history:',I_event,'\n'
+	    #return the updated population and event history arrays
+	   	return (c_pop, I_event)
 # end of function BIRTH
 
 # Function for DEATH event: Takes as INPUT array holding current population (c_pop), index for the
@@ -335,43 +334,43 @@ print 'Boreal:\n','\nPopulation:',c_bor,'\nEvent history:',I_event_bor,'\n\nNeot
 # 4) i_count*f_drate/P, exinction event
 print 'SIMULATION...\n'
 
-for i_count in range(0,i_sim_size):
-        # inter-event waiting time
-        P = f_turnover+((i_count+1)*(f_brate+f_drate))+f_mrate
-	f_times=random.expovariate(P)
-	f_maxtime=Maximum(I_event_bor[len(I_event_bor)-1][1],I_event_neo[len(I_event_neo)-1][1])
-	f_tot=f_times+f_maxtime
+for i_count in range(0,i_sim_size):    
+    # inter-event waiting time
+    P = f_turnover +((i_count+1)*(f_brate+f_drate)) + f_mrate
+    f_times=random.expovariate(P)
+    f_maxtime=Maximum(I_event_bor[len(I_event_bor)-1][1],I_event_neo[len(I_event_neo)-1][1])
+    f_tot=f_times+f_maxtime
 	#print f_maxtime
         #print f_times
-	f_rand = random.random()
+    f_rand = random.random()
 	# if random is b/w 0 and f_turnover/P, let's say it's a turnover event
-        if f_rand <= f_turnover/P:
+    if f_rand <= f_turnover/P:
 		# Pick a species randomly, it undergoes birth.
-        	x= random.random()
+        x= random.random()
 		# y is the index of the species undergoing birth
-        	y= int(math.ceil(x*len(c_bor)))
-		print '\nTurnover event\n'
-		#if len(c_bor)>0:
-		#	print c_bor[y-1],' undergoes birth\n'
-		# call Birth function
-		(c_bor, I_event_bor) = Birth(c_bor,y,len(I_event_bor),f_tot,I_event_bor,"bor")
+        y= int(math.ceil(x*len(c_bor)))
+        print '\nTurnover event\n'
+        #if len(c_bor)>0:
+        #	print c_bor[y-1],' undergoes birth\n'
+        # call Birth function
+        (c_bor, I_event_bor) = Birth(c_bor,y,len(I_event_bor),f_tot,I_event_bor,"bor")
 		#print c_bor, I_event_bor
 		# Pick a species randomly, it undergoes death 
-        	x= random.random()
-        	y= int(math.ceil(x*len(c_bor)))
+        x= random.random()
+        y= int(math.ceil(x*len(c_bor)))
 		# y is the index of the species undergoing death
 		#if len(c_bor)>0:
 		#	print c_bor[y-1],' undergoes death\n'
-	 	# call Death function
-		#print c_bor, y, i_count, I_event_bor	
-		(c_bor, I_event_bor) = Death(c_bor,y,len(I_event_bor),f_tot,I_event_bor,"bor")
+		# call Death function
+	 	#print c_bor, y, i_count, I_event_bor
+        (c_bor, I_event_bor) = Death(c_bor,y,len(I_event_bor),f_tot,I_event_bor,"bor")
 		#print c_bor, I_event_bor
 	# if random is b/w f_turnover/P and (f_turnover+f_mrate)/P, let's say it's a migration event
-	elif f_rand > f_turnover/P and f_rand <= (f_turnover+f_mrate)/P:
+    elif (f_rand > f_turnover/P) and (f_rand <= (f_turnover+f_mrate)/P):
 		# Pick a species randomly, copy/migrate it to the neotropical region
-        	x= random.random()
+		x= random.random()
 		# y is the index of the species undergoing migration
-        	y= int(math.ceil(x*len(c_bor)))
+		y= int(math.ceil(x*len(c_bor)))
 		if len(c_bor)>0 and c_bor[y-1][1]==-1:
 			print '\nMigration event:\nSpecies ', c_bor[y-1][0],'moves over from the boreal region\n'
 			# call Migration function
@@ -384,26 +383,26 @@ for i_count in range(0,i_sim_size):
 			print 'This species has already migrated or there are no species to migrate. No change in populations.\n'
 	# if random is b/w (f_turnover+f_mrate)/P and (f_turnover+((i_count+1)*f_brate)+f_mrate)/P, 
 	# it's a birth event in the neotropical region
-	elif f_rand > (f_turnover+f_mrate)/P and f_rand <= (f_turnover+((i_count+1)*f_brate)+f_mrate)/P:
+    elif f_rand > (f_turnover+f_mrate)/P and f_rand <= (f_turnover+((i_count+1)*f_brate)+f_mrate)/P:
 		# Pick a species randomly, it undergoes birth
-        	x= random.random()
+        x= random.random()
 		# y is the index of the species undergoing birth
- 	      	y= int(math.ceil(x*len(c_neo)))
-		if len(c_neo)>0:
-        		print '\nSpeciation event: '# undergone by',c_neo[y-1],'\n'
+        y= int(math.ceil(x*len(c_neo)))
+        if len(c_neo)>0:
+        	print '\nSpeciation event: '# undergone by',c_neo[y-1],'\n'
 		# call Birth function
 		(c_neo, I_event_neo) = Birth(c_neo,y,len(I_event_neo),f_tot,I_event_neo,"neo")
 		#print c_neo, I_event_neo
 	# else, it's a death event in the neotropical region 
 	else:
 		# Pick a species randomly, it undergoes extinction
-        	x= random.random()
+		x= random.random()
 		# y is the index of the species undergoing extinction
-        	y= int(math.ceil(x*len(c_neo)))
-		if len(c_neo) > 0:
+        y= int(math.ceil(x*len(c_neo)))
+        if len(c_neo) > 0:
 			print '\nExtinction event: '# undergone by',c_neo[y-1],'\n'
 		# call Death function
-		(c_neo, I_event_neo) = Death(c_neo,y,len(I_event_neo),f_tot,I_event_neo,"neo")
+        (c_neo, I_event_neo) = Death(c_neo,y,len(I_event_neo),f_tot,I_event_neo,"neo")
 		#print c_neo, I_event_neo
 
 print "\nFinal population in boreal region: ",c_bor,"\n\nFinal population in neotropical region:",c_neo

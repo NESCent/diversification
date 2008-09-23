@@ -2694,21 +2694,22 @@ def PrepareTree():
     return x
     
 if __name__ == "__main__":
-    G = PrepareTree()
-    level_number = 4
-    migration_type = "m_2"
-    current_delta = [1,1,0,1]
-    all_delta_earlier = [1,1,0,1]
-    lineage = ChooseLineageandUpdateDelta(G, level_number, migration_type, current_delta, all_delta_earlier)
-    #we expect current_delta to be [1,0,0,1]
-    #and lineage = 2
-    #print lineage
-    
-    current_state = (5, 2, 1, 1)
-    current_delta = [1,1,0,1]
-    all_delta_earlier = {0:1, 1:1, 2:0, 3:1}
-    all_delta_later = {0:1, 1:1, 2:0, 3:1}
-    current_level = G.levels[0]
-    next_level = G.levels[1]
-    result = MovetoNextLevel(current_state, current_delta, all_delta_earlier, all_delta_later, current_level, next_level)
-    
+#    G = PrepareTree()
+#    level_number = 4
+#    migration_type = "m_2"
+#    current_delta = [1,1,0,1]
+#    all_delta_earlier = [1,1,0,1]
+#    lineage = ChooseLineageandUpdateDelta(G, level_number, migration_type, current_delta, all_delta_earlier)
+#    #we expect current_delta to be [1,0,0,1]
+#    #and lineage = 2
+#    #print lineage
+#    
+#    current_state = (5, 2, 1, 1)
+#    current_delta = [1,1,0,1]
+#    all_delta_earlier = {0:1, 1:1, 2:0, 3:1}
+#    all_delta_later = {0:1, 1:1, 2:0, 3:1}
+#    current_level = G.levels[0]
+#    next_level = G.levels[1]
+#    result = MovetoNextLevel(current_state, current_delta, all_delta_earlier, all_delta_later, current_level, next_level)
+    x = 3
+    print "nice" , x ,"nice"
