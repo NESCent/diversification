@@ -474,21 +474,24 @@ def ApplyEvent(z,w,level):
         if (x_1==1 and x_2==1):
             new_state= (q_t, r_t-1, -1, -1)
             #(q_t, r_t, x_1, x_2) --> (q_t, r_t-1, UNDEFINED, UNDEFINED)
-            if(IsValidState(new_state,level-1)==False):
+            if(q_t>-1 and r_t-1 >-1):
+                return new_state
+            else:
                 return (-1,-1,-1,-1)
-            return new_state
     
         if ((x_1==1 and x_2==0) or (x_1==0 and x_2==1)):
             new_state=(q_t,r_t-1, -1, -1)
-            if(IsValidState(new_state,level-1)==False):
+            if(q_t>-1 and r_t-1 >-1):
+                return new_state
+            else:
                 return (-1,-1,-1,-1)
-            return new_state
 
         if (x_1==0 and x_2==0):
             new_state= (q_t-1, r_t, -1, -1)
-            if(IsValidState(new_state,level-1)==False):
+            if(q_t-1 >-1 and r_t >-1):
+                return new_state
+            else:
                 return (-1,-1,-1,-1)
-            return new_state
     
     if(w=="m_1"):
         if(x_1==1):
@@ -1695,7 +1698,9 @@ def MakeTransitionMatrixForLevel(level_number, sigma):
             #If column == (-1,-1,-1,-1), which means the event
             #cannot be applied to z, then P(w|z)=0, so we don't need to 
             #fill out this entry anyhow. 
- 
+            if(row==2):
+                print("HERE event "+str(w))
+                print(w_of_z)
             if (w_of_z != (-1,-1,-1,-1)):
                 #Now, if column != (,,-1,-1),that is, 
                 #when the event is "kappa", we place it in the last column
