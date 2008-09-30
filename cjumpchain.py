@@ -585,6 +585,11 @@ def GetLinearEquations(state_space_at_current_level,sigma, level):
                                 for more details.
     level                       the current level
     
+
+    Output value
+    -------------
+    Return (A,b) where A is a level_number*level_number matrix, and b is a constant vector
+    (i,j) of A represents a transition from state with index i to state with index j
     
     Details
     --------
@@ -619,31 +624,27 @@ def GetLinearEquations(state_space_at_current_level,sigma, level):
     How do we fill out matrix A? 
     
     For instance, suppose there are 5 equations of the following format
-    x_0 = 4 + 3x_1 + 11x_3 + 8x_4         
-    x_1 = 8 + 2x_4 + 10x_3
+    x_0 = 4 + 3x_0 + 11x_3 + 8x_4         
+    x_1 = 8 + 2x_1 + 10x_3
     x_2 = 17
     x_3 = 25 + 3x_1 + 12x_3 + 22x_2
     x_4 = 0 + 3x_3
     
     Rearranging, we get:
-    4 = x_0 - 3x_1 - 11x_3 - 8x_4 
-    8 = x_1 - 2x_4 - 10x_3
+    4 = x_0 - 3x_0 - 11x_3 - 8x_4 
+    8 = x_1 - 2x_1 - 10x_3
     17 = x_2
-    25 = x_3 - 3x_1 - 12x_0 - 22x_2
+    25 = x_3 - 3x_1 - 12x_3- 22x_2
     0 = x_4 - 3x_3
     
     We want to eventually turn it into the form that: 
-    [4,8,17,25,0].transpose() = [[1, -3, 0, -11, -8],  * [x_0,x_1,x_2,x_3,x_4].transpose
-                                 [0, 1, 0, -10, -2],
+    [4,8,17,25,0].transpose() = [[-1, 0, 0, -11, -8],  * [x_0,x_1,x_2,x_3,x_4].transpose
+                                 [0, -1, 0, -10, 0],
                                  [0, 0, 1, 0, 0],
-                                 [-12, -3, -22, 1, 0],
+                                 [0, -3, -22, -11, 0],
                                  [0, 0, 0, -3, 1]]
                                  
     We call the LHS b, and the 5x5 matrix A, we would output (A, b)                             
-    
-    Output value
-    -------------
-    Return (A,b) where A is a level_number*level_number matrix, and b is a constant vector
     """ 
     length = len(state_space_at_current_level)
     constant_vector = [UnconditionalTransitionProbability("kappa",z,sigma) for z in state_space_at_current_level]
@@ -732,11 +733,41 @@ def LinearEquationSolver(A, b):
     return solve(A,b)
 
 def CalculatePi(j_species,sigma):
+    """
+    Calculates p_j, or the probability that the equilibrium number of species equals j given
+    sigma
+    
+    Input Parameters
+    ----------------
+    @param j_species    j species; a nonnegative integer
+    @param sigma    set of all parameters for the model
+                    For the model in mossEqModel.pdf, 
+                    sigma = (lambda, b, B, alpha, mu), where 
+                    
+                    lambda is the turnover rate in state 0 (the boreal region), 
+                    b = the effective migration rate from state 0 to 1 (boreal to tropical), 
+                    B = the total number of species in state 0 (the boreal region)
+                    alpha = the per lineage speciation rate in state 1 (the neotropical region), and 
+                    mu = the per lineage extinction rate in state 1 (the neotropical region).
+
+    Return Value
+    ----------
+    p_j, or the probability that the equilibrium number of species equals j given
+    
+    Details
+    --------    
+    Only 3 components of sigma are needed:
+    alpha     sigma[3] = per species birth rate in neotropical region; positive constant
+    b         sigma[1] = migration rate
+    mu        sigma[4] = death rate of species in neotropical region when number of species is i; positive constant
+
+    if log_pi=-1, then pi=0 (since the log of 0 is undefined).
+    """
     log_pi=CalculateLogPi(j_species,sigma)
     alpha = sigma[3]
     mu = sigma[4]
     if (log_pi == -1): 
-        return 0
+        return 0;      
     return(pow(alpha/mu,log_pi))
     
 def CalculateLogPi(j_species, sigma):
@@ -758,6 +789,12 @@ def CalculateLogPi(j_species, sigma):
                     alpha = the per lineage speciation rate in state 1 (the neotropical region), and 
                     mu = the per lineage extinction rate in state 1 (the neotropical region).
     
+    Return value
+    -------------
+    The log base alpha/mu of p_j, where p_j is defined as
+    p_j = C(b/alpha + j - 1,j)*(alpha/mu)^j*(1-alpha/mu)^(-b/alpha)
+    if alpha=mu, -1, a flag is returned (since log of zero, and log base 1 is undefined)
+
     Details
     --------    
     Only 3 components of sigma are needed:
@@ -765,13 +802,12 @@ def CalculateLogPi(j_species, sigma):
     b         sigma[1] = migration rate
     mu        sigma[4] = death rate of species in neotropical region when number of species is i; positive constant
     
-    Important!! b/a+j-1 must be nonegative, so should be j
 
     if alpha=mu, pi will be always zero, and CalculateLogPi returns -1, a flag that alpha=mu
     
-    Basically, we want to calculate pi_j = C(b/a+j-1,j)*(a/u)^j*(1-a/u)^(-b/a)
-    so we take log_a/u of pi_j, that allows us to avoid (a/u)^j which 
-    would become identically 0 when j is large (i.e. when j=1500). 
+    We want to calculate pi_j = C(b/a+j-1,j)*(a/u)^j*(1-a/u)^(-b/a)
+    so we take log_a/u of pi_j, which prevents (a/u)^j from becoming
+    0 when j is large (i.e. when j=1500). 
     
     Thus x = log_{a/u} pi_j = log_{a/u} C(b/a+j-1,j) + j + log_{a/u} (1-a/u)^(-b/a)
     
@@ -779,37 +815,20 @@ def CalculateLogPi(j_species, sigma):
     
     CalculatePi returns pi_j = (a/u)^x, by simply calling
     this helper class.  
-    
-    The purpose of this is to prevent (a/u)^j, the exponential function,
-    from getting identically to 0. 
-    
-    This is useful when we calculate piStar, when is pi/a bunch of other pis. 
-    When j is large, the denominator and numerator are both very very
-    near zero, so piStar is -1IND. Well, now we can get around that
-    by using 
-    log_{a/u} pi_j - log_{a/u} (sum of a bunch of Pi's) =
-    log_{a/u} pi_j / (sum of a bunch of Pi's) = LogPiStar
-    which is NOT 0, then we can calculate
-    LogPiStar^(a/u) = pi_j / sum of a bunch of Pi's
-    
-    Returns value
-    -------------
-    The log of p_j, where p_j is defined as
-    p_j = C(b/alpha + j - 1,j)*(alpha/mu)^j*(1-alpha/mu)^(-b/alpha); a float
-    if alpha=mu, -1, a flag is returned
     """
     alpha = sigma[3]
     b = sigma[1]
     mu = sigma[4]
-    if (alpha >= mu):
+    if(alpha>mu):
+
+        print("Error, alpha is greater than mu")        
+        return -2
+    if (alpha== mu):
         return -1
     if(b<alpha):
         combination= float(CombOfNegative(b/alpha+j_species-1,j_species))
     else:
         combination = float(comb(b/alpha+j_species-1,j_species))
-    if (combination == 0):
-        #math.log(0,something) is undefined, so just return -1 for error
-        return -1
     coefficient = math.log(combination,alpha/mu)
     ratio = float(j_species)
     ratio2 = math.log(pow(float(1-alpha/mu),-b/alpha),alpha/mu)
@@ -850,8 +869,8 @@ def CalculateLogPiStar(n_t, current_state_for_uncond_probs, sigma, num_sum=20):
                     at time t
     @param current_state_for_uncond_probs    
                     the current state for unconditional probability
-                    current_state_for_uncond_probs[0] = q_t - number of ancestral species in boreal in sample history at time t
-                    current_state_for_uncond_probs[1] = r_t - number of ancestral species in neotropics in sameple history at time t              
+                    current_state_for_uncond_probs[0] = q_t : number of ancestral species in boreal in sample history at time t
+                    current_state_for_uncond_probs[1] = r_t : number of ancestral species in neotropics in sameple history at time t              
                     Note: only [1]=r_t is needed.
     @param num_sum  the number of summations to be done, the upper limit of summation is r_t+num_sum
     @param sigma    set of all parameters for the model
@@ -874,18 +893,11 @@ def CalculateLogPiStar(n_t, current_state_for_uncond_probs, sigma, num_sum=20):
     Return value
     -------------
     The log of piStar, where piStar is defined as:
-    p(n_t | q_t, r_t)= pi_n_t / \sum_{k>=r_t}(pi_k); 
+    p(n_t | q_t, r_t)= pi_n_t / sum_{k>=r_t}(pi_k); 
     Note that piStar is called the stead-state frequency of n_t, normalized to condition
     on the fact that at least r_t neotropical species are known to exist at time t. 
     """
     r_t = current_state_for_uncond_probs[1]
-    
-    #numerator = CalculatePi(n_t,sigma)
-    #denominator=0.0
-    
-    #for i in range(r_t, upper): 
-    #    denominator=denominator+CalculatePi(i,sigma)
-    #return numerator/denominator 
     alpha = sigma[3]
     mu = sigma[4]
     log_numerator = CalculateLogPi(n_t,sigma)
@@ -925,7 +937,7 @@ def CalculatePiStar(n_t, current_state_for_uncond_probs, sigma, num_sum=20):
     
     Return value
     -------------
-    p(n_t | q_t, r_t)= pi_n_t / \sum_{k>=r_t}(pi_k); a float
+    p(n_t | q_t, r_t)= pi_n_t / sum_{k>=r_t}(pi_k); a float
     This is called the stead-state frequency of n_t, normalized to condition
     on the fact that at least r_t neotropical species are known to exist at time t. 
     """  
@@ -1013,7 +1025,7 @@ def UncondProbSTTGlobal(current_state_for_uncond_probs, sigma, num_sum=20):
 
 def UncondProbSBBGlobal(current_state_for_uncond_probs, sigma, num_sum=20):
     """
-    That incluces regular s_bb and kappa (kappa could be 0)
+    The s_bb global that incluces regular s_bb and kappa
     Calculates p(S_BB | q_t), the probability of speciation event in the boreal region 
     that is captured in the history of the sample. This is simple 
     since boreal region maintains a constant fixed number of species, 
@@ -1310,7 +1322,7 @@ def UncondProbM2(current_state_for_uncond_probs, sigma,num_sum=20):
 
 def ReinterpretUncondEvent(event, z):
     """
-    We know in to calculate unconditional probabilities (not based on
+    To calculate unconditional probabilities (not based on
     each coealescing lineages' present states), "m_1" and "m_2" are 
     treated as "s_b_arrow_t", and "kappa" is treated as 
     either "s_bb", "s_tt", or "s_bt".
@@ -1698,9 +1710,6 @@ def MakeTransitionMatrixForLevel(level_number, sigma):
             #If column == (-1,-1,-1,-1), which means the event
             #cannot be applied to z, then P(w|z)=0, so we don't need to 
             #fill out this entry anyhow. 
-            if(row==2):
-                print("HERE event "+str(w))
-                print(w_of_z)
             if (w_of_z != (-1,-1,-1,-1)):
                 #Now, if column != (,,-1,-1),that is, 
                 #when the event is "kappa", we place it in the last column
@@ -1734,16 +1743,16 @@ def MakeTransitionMatrixForLevel(level_number, sigma):
                 else: 
                     transition_matrix[row,column] = solution[column] * UnconditionalTransitionProbability(w, z, sigma)
         #Testing if sum of rows = P(F|z), really normalizing against P(F|z)
-        #testing = transition_matrix[row].copy()
-        #testing2 = transition_matrix[row].copy()
+        testing = transition_matrix[row].copy()
+        testing2 = transition_matrix[row].copy()
         #Equal is defined in this class to test two numbers are so close
         #they're considered "equal" - use this is b/c == is hard
         #to apply to float numbers. 
-        #assert(Equal(testing.sum(), solution[row]))
-        #for j in range(len(testing)):
-        #    testing[j] = testing[j]/solution[row]
-        #Normalize(testing2)  
-       #assert(allclose(testing,testing2))
+        assert(Equal(testing.sum(), solution[row]))
+        for j in range(len(testing)):
+            testing[j] = testing[j]/solution[row]
+        Normalize(testing2)  
+        assert(allclose(testing,testing2))
         
         Normalize(transition_matrix[row])
     # =================================================================
@@ -1960,8 +1969,6 @@ def PickNextStateofChain(row_of_transition_matrix):
    
     spot=0
     row_for_choosing=range(len(row_of_transition_matrix))
-    print("row of transition matrix")
-    print(row_of_transition_matrix)
     for i in range(len(row_of_transition_matrix)):
         spot+=row_of_transition_matrix[i]
         row_for_choosing[i]=spot
@@ -2173,7 +2180,9 @@ def MovetoNextLevel(current_state, current_delta, all_delta_earlier, all_delta_l
         if (r_t >=1):#this should be a given by the structure of the transition matrix
             return ((q_t, r_t-1, current_delta[next_x_1_index], current_delta[next_x_2_index]),current_delta,all_delta_earlier,all_delta_later)
 
-def Test(delta,sigma,G):
+def Test(G):
+    sigma=(0.10000000000000001, 0.040000000000000012, 50, 0.090000000000000003, 0.10000000000000001)
+    delta={0:1,1:1,2:1,3:1}
     alpha=sigma[3]
     mu=sigma[4]
     if(alpha>mu):
@@ -2505,7 +2514,6 @@ def SampleFromIS(G, delta, sigma, (transition_matrices, state_to_index_in_transi
 
         whether_in_the_same_level = "True"
         while whether_in_the_same_level == "True":
-            print("got here")
             # pick a next state to transition to such that 
             # Pr(index of next state = j | index of current state = index_of_current_state) = transition_matrix_for_the_level[index_of_current_state][j]
             (index_of_next_state, probability_of_transition) = PickNextStateofChain(transition_matrix_for_the_level[index_of_current_state])
@@ -2569,7 +2577,6 @@ def SampleFromIS(G, delta, sigma, (transition_matrices, state_to_index_in_transi
                 current_level_number=next_level_number
     
             probability_of_history = probability_of_history * probability_of_transition
-            print("prob 2"+str(probability_of_history))
 
     return(probability_of_history,all_delta_earlier, all_delta_later)            
 
