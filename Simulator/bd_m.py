@@ -26,20 +26,23 @@ def Maximum(a,b):
 # species undergoing migration (y), time of event (f_times), array holding
 # event history (I_event) for boreal region, array holding neotropical population (c_pop1), array holding
 # event history (I_event1) for neotropical region.
+# left_lineage=right_lineage=-2 is a flag for migration
 # RETURNS updated population and event history arrays for boreal and neotropical regions.
-def Migration(c_pop,y,f_times,I_event,c_pop1,I_event1):
-	    # i_temp is the number of events so far - 1
-	    i_temp = len(I_event)-1
-	    i_temp1= len(I_event1)-1
+#def Migration(c_pop,y,f_times,I_event,c_pop1,I_event1):
+def Migration(population,y,time,event):
+	    #event # and node # are the same
 	    # For a description of what the entries in the I_event array represent, look in "MAIN CODE"
-        # Adding the event to the boreal region as [event #,time of event,-1,-1,-1].
-	    I_event.append([i_temp+2,f_times,-1,-1,-1])
+		# Adding the event to the boreal region as [event #,time of event,-1,-1,-1].
+	    #I_event.append([len(I_event)+1,f_times,-2,-2,migrate_parent])
 	    # Add a copy of the migrating organism to the neotropical region
-	    c_pop1.append([c_pop[y-1][0],-1,0])
+	    event[y][5]=1;
+	    event[y][6]=time;
+	    #c_pop1.append([c_pop[y-1][0],-1,0])
+	    population[y][0]=1
 	    # In the event history of the neotropical region, add an event as [event #, time of event, -1,-1,-1].
-	    I_event1.append([i_temp1+2,f_times,-1,-1,-1])
         # return the updated population and event history arrays for both regions
-	    return (c_pop, I_event,c_pop1,I_event1)
+	    #return (c_pop, I_event,c_pop1,I_event1)
+        return(population,event)
 # end of function Migration
 
 # Function for BIRTH event: Takes as INPUT array holding current population (c_pop), index for the
