@@ -14,6 +14,7 @@ def MetropolisHastings(G, delta, sigma):
 
     alpha = sigma[3]
     beta = sigma[1]
+    #Right now I am just using GStar as a placeholder for SigmaStar
     WeightSigmaStar = CalculateGamma(Gstar, alpha, beta)
     WeightSigma = CalculateGamma(G, alpha, beta)
     proposal_sig = ProbGStarGivenSigma * WeightSigmaStar / (ProbGGivenSigma * WeightSigma)
