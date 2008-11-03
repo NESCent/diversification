@@ -4,6 +4,9 @@ import random as random
 
 def MetropolisHastings(G, delta, sigma):
     #First sample (sigma*, G*) from Q(. | sigma, G)
+    #an Independence Chain Metropolis-Hastings since the proposal distribution does not depend on the
+    #current proposed value of sigma
+    
     x = random()
     lambdaStar = x.gammavariate(.3,.5)
     betaStar = x.gammavariate(.3,.5)
@@ -46,11 +49,11 @@ def MetropolisHastings(G, delta, sigma):
     alpha = sigma[3]
     beta = sigma[1]
     #Right now I am just using GStar as a placeholder for SigmaStar
-    WeightSigmaStar = CalculateGamma(Gstar, alpha, beta)
-    WeightSigma = CalculateGamma(G, alpha, beta)
-    proposal_sig = ProbGStarGivenSigma * WeightSigmaStar / (ProbGGivenSigma * WeightSigma)
+    #WeightSigmaStar = CalculateGamma(Gstar, alpha, beta)
+    #WeightSigma = CalculateGamma(G, alpha, beta)
+    hastingsRatio= ProbGStarGivenSigma *wStarOfSigma/ (ProbGGivenSigma * wOfSigma)
     
-    M = Metropolis(stochastic, scale=1, sig=proposal_sig, dist=None, verbose=0)
+    #M = Metropolis(stochastic, scale=1, sig=proposal_sig, dist=None, verbose=0)
     
 def CalculateGamma(x, alpha, beta):
     #CalculateGamma(x; alpha, beta) = beta^alpha * e^(-beta*x) * x^(alpha-1)
