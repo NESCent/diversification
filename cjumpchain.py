@@ -821,7 +821,7 @@ def CalculateLogPi(j_species, sigma):
     mu = sigma[4]
     if(alpha>mu):
 
-        print("Error, alpha is greater than mu")        
+        #print("Error, alpha is greater than mu")        
         return -2
     if (alpha== mu):
         return -1
@@ -2241,9 +2241,8 @@ def SampleFromIS(G, delta, sigma, (transition_matrices, state_to_index_in_transi
     Return value(s)
     ---------------
     
-    a real number density_A, where A is a 
-    a time-order event history A (for use in the right side of
-                                     Equation 8)
+    a real number density_A, where A is a a time-order event history A (for use in the right side of
+                        Equation 8)
     all_delta_earlier   a dictionary mapping the indices of all lineages in all levels to their character
                         states right before the lineages coalesce
 
@@ -2472,7 +2471,7 @@ def SampleFromIS(G, delta, sigma, (transition_matrices, state_to_index_in_transi
     all_delta_later=delta.copy()
 
     while not current_level_number == 1:
-        print("level "+str(current_level_number))
+       # print("level "+str(current_level_number))
         # Note: the following, and all assignments in fact, are copies by
         # reference, since all an assignment does in python 
         # is to map a name to an object.
@@ -2517,8 +2516,8 @@ def SampleFromIS(G, delta, sigma, (transition_matrices, state_to_index_in_transi
             # pick a next state to transition to such that 
             # Pr(index of next state = j | index of current state = index_of_current_state) = transition_matrix_for_the_level[index_of_current_state][j]
             (index_of_next_state, probability_of_transition) = PickNextStateofChain(transition_matrix_for_the_level[index_of_current_state])
-            print("prob 1 "+str(index_of_next_state)+" "+str(probability_of_transition))
-            print("current_state "+str(state_of_cond_jump_chain))
+            #print("prob 1 "+str(index_of_next_state)+" "+str(probability_of_transition))
+            #print("current_state "+str(state_of_cond_jump_chain))
             if(index_of_next_state==len(index_in_transition_matrix_to_state)):
                 whether_in_the_same_level = "False"
             # check if current state and the proposed next state are in the same level
@@ -2534,11 +2533,11 @@ def SampleFromIS(G, delta, sigma, (transition_matrices, state_to_index_in_transi
                 # uniformly at random among
                 # all lineages that *could* migrate and return it.
                 next_state_of_cond_jump_chain = index_in_transition_matrix_to_state[index_of_next_state]
-                print("next state "+str(next_state_of_cond_jump_chain))
+                #print("next state "+str(next_state_of_cond_jump_chain))
                 migration_type = MigrationType(state_of_cond_jump_chain, next_state_of_cond_jump_chain)
                 (migrating_lineage, current_delta, all_delta_earlier) = ChooseLineageandUpdateDelta(G, current_level_number, migration_type, current_delta, all_delta_earlier)
                 current_level.event_history.append(migrating_lineage)
-                print("appended migrating lineage "+str(migrating_lineage))
+                #print("appended migrating lineage "+str(migrating_lineage))
                 
                 # updating the state of the chain.
                 state_of_cond_jump_chain = next_state_of_cond_jump_chain
@@ -2719,4 +2718,4 @@ if __name__ == "__main__":
 #    next_level = G.levels[1]
 #    result = MovetoNextLevel(current_state, current_delta, all_delta_earlier, all_delta_later, current_level, next_level)
     x = 3
-    print "nice" , x ,"nice"
+    #print "nice" , x ,"nice"

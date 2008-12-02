@@ -113,9 +113,12 @@ def CreatePopulation(birth_0, death_0, birth_1, death_1, migration_1, migration_
         nodes.update({i : [0,-1,0,[],-1,set([i])]});
     for i in range(initial_1) :
         nodes.update({i+initial_0 : [0,-1,1,[],-1,set([i+initial_0])]});
-    
+
+      
+    j=0;
     while(all_related==False):
-        print(nodes);
+        j=j+1;
+        #print(nodes);
         total_0=len(in_0);
         total_1=len(in_1);
         time=time+dt;
@@ -144,9 +147,9 @@ def CreatePopulation(birth_0, death_0, birth_1, death_1, migration_1, migration_
         for i in range(len(row_for_choosing)):
             row_for_choosing[i]=row_for_choosing[i]/row_for_choosing[6];
                     
-        print row_for_choosing ;       
+        #print row_for_choosing ;       
         event_number=GetEvent(row_for_choosing);
-        print "event number "+str(event_number);
+        #print "event number "+str(event_number);
         in_0_copy=in_0.copy()
         in_1_copy=in_1.copy()
         all_lineages=in_0_copy.union(in_1_copy);
@@ -180,54 +183,69 @@ def CreatePopulation(birth_0, death_0, birth_1, death_1, migration_1, migration_
         random_index_all=random_list[0];
         
         if(event_number==0):#birth 0
-            print "birth 0";
+            #print "birth 0";
             index_to_birth=random_index_0;
             (nodes, new_index)=Birth(index_to_birth,time,nodes);
             in_0.update([new_index]);
         if(event_number==1):#death 0
-            print "death 0";
+            #print "death 0";
             index_to_die=random_index_0;
             nodes=Death(index_to_die,time,nodes);
             in_0.remove(index_to_die);
         if(event_number==2):#birth 1
-            print "birth 1";
+            #print "birth 1";
             index_to_birth=random_index_1;
             (nodes, new_index)=Birth(index_to_birth,time,nodes);
             in_1.update([new_index]);
         if(event_number==3):#death 1
-            print "death 1";
+            #print "death 1";
             index_to_die=random_index_1;
             nodes=Death(index_to_die,time,nodes);
             in_1.remove(index_to_die);
         if(event_number==4):#migration 0
-            print "migration 0";
+            #print "migration 0";
             index_to_migrate=random_index_all;
             nodes=Migration(index_to_migrate,time,nodes,0)
             if len(in_1.intersection(set([index_to_migrate])))!=0:
                 in_1.remove(index_to_migrate);
                 in_0.update([index_to_migrate]);
         if(event_number==5):#migration 1
-            print "migration 1";
+            #print "migration 1";
             index_to_migrate=random_index_all;
             nodes=Migration(index_to_migrate,time,nodes,1)
             if len(in_0.intersection(set([index_to_migrate])))!=0:
                 in_0.remove(index_to_migrate);
                 in_1.update([index_to_migrate]);
 
-    all_related=True;
-    common_rel=nodes[0][5]
-    for i in range(1,len(nodes)) :
-        common_rel=nodes[i][5].intersection(common_rel);
-        if(len(common_rel)==0):
-            all_related=False;
-            break
+        #print("nodes");
+        #print(nodes);
+        #print("in 0")
+        #print(in_0);
+        #print("in 1");
+        #print(in_1);
+        all_lineages=in_0.union(in_1);
+        length=len(all_lineages);
+        all_related=True;
+        common_rel=nodes[all_lineages.pop()][5]
+        #print("common");
+        #print(length-1);
+        while(len(all_lineages)>0):
+            common_rel=nodes[all_lineages.pop()][5].intersection(common_rel);
+            #print(common_rel);
+            if(len(common_rel)==0):
+                all_related=False;
+        #print("j "+str(j));
+        if j==100000:
+            all_related=True;
+            print("forced quit");
         
-    return [nodes, final_0, final_1]
+    #return [nodes, final_0, final_1]
+    return [nodes, in_0, in_1, len(in_0), len(in_1), common_rel]    
 
 def GetEvent(row_for_choosing):
 
     n=random.uniform(0,1);
-    print(str(n)+"random")
+    #(str(n)+"random")
     for i in range(len(row_for_choosing)):
         if(i==0):
             if(0<=n<row_for_choosing[i]):
@@ -271,5 +289,56 @@ def Simulate(birth_0, death_0, birth_1, death_1, migration_1, migration_0, dt, i
     #not known, so it will be best to at first have the birth rate only slightly smaller than the death rate,
     #and have run equal 2 or 3.
     for i in range(0,runs):
-        [nodes,initial_0,initial_1]=CreatePopulation(birth_0, death_0, birth_1, death_1, migration_1, migration_0, dt, intitial_0, initial_1)
-    return nodes
+        [nodes,in_0, in_1, initial_0,initial_1, common_rel]=CreatePopulation(birth_0, death_0, birth_1, death_1, migration_1, migration_0, dt, intitial_0, initial_1)
+        #common_rel=CreatePopulation(birth_0, death_0, birth_1, death_1, migration_1, migration_0, dt, intitial_0, initial_1)
+    return [nodes, in_0, in_1, common_rel]
+
+def GetCounts(nodes_real):
+    counts=range(len(nodes_real));
+    for i in range(len(counts)):
+     	counts[i]=0;
+     	
+    nodes=nodes_real.copy();
+    for i in range(len(nodes)):
+        size=len(nodes[i][5]);
+        if(nodes[i][4]==-1):#only count a node if it is not dead
+            #print("not dead "+str(i));
+            #print("size of ancestors "+str(size));
+            for j in range(size):
+                index=nodes[i][5].pop()
+                #print("parent node "+str(index));
+                counts[index]=counts[index]+1;  
+    return counts
+
+def PrintNodes(nodes, common_real):
+    """
+    parent: [children]
+    [Time of Birth (0), Parent node (1), region (2), migration_times (3), Time of Death (4), related_to (5)]
+    """
+    common=common_real.copy();
+    size=len(common);
+    common_array=range(size);
+    for i in range(size):
+        common_array[i]=common.pop();
+
+    common_array.sort();
+    begin_node=common_array[0];
+    print(begin_node);
+    nodes_map={};
+    for i in range(len(nodes)):
+        if(nodes_map.has_key(nodes[i][1])):#parent is already in nodes_map
+            if(nodes[i][4]==-1): #not dead
+                parent_node=nodes[i][1];
+                children_array=nodes_map[parent_node];
+                children_array.append(i);
+
+        else: #parent is not in nodes_map yet
+            if(nodes[i][4]==-1): #not dead
+                nodes_map.update({nodes[i][1]:[i]});
+
+    return nodes_map            
+                
+
+    
+
+    
