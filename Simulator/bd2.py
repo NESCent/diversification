@@ -75,7 +75,7 @@ def Death(y,time,nodes):
         
     return nodes
 
-def CreatePopulation(birth_0, death_0, birth_1, death_1, migration_1, migration_0, dt, initial_0, initial_1):
+def CreatePopulation(birth_0, death_0, birth_1, death_1, migration_0, migration_1, dt, initial_0, initial_1):
     """
     Starting with initial_0 unconnected lineages in the boreal region, and initial_1 unconnected lineages in
     the tropical region, this function simulates the birth-death-migration process until all the lineages left are related
@@ -116,48 +116,35 @@ def CreatePopulation(birth_0, death_0, birth_1, death_1, migration_1, migration_
 
       
     j=0;
+    time=0;
     while(all_related==False):
         j=j+1;
         #print(nodes);
         total_0=len(in_0);
         total_1=len(in_1);
-        time=time+dt;
+        total_events=birth_0+birth_1+death_0+death_1+migration_0+migration_1;
+        time_till_event=random.gammavariate(1,total_events);
+        time=time+time_till_event;
+        #time=time+dt;
         #prob_X is at least one X event in the time dt (1-Poisson probability no events), where X is birth_0, death_0
         #birth_1, death_1, migration_0 or migration_1. Therefore, dt needs to be small enough
         #such that the probability of two events is much smaller than the probability of one event in dt.
-        prob_birth_0=1-math.exp(-birth_0*total_0*dt);
-        prob_death_0=1-math.exp(-death_0*total_0*dt);
-        prob_birth_1=1-math.exp(-birth_1*total_1*dt);
-        prob_death_1=1-math.exp(-death_1*total_1*dt);
-        prob_migration_0=1-math.exp(-migration_0*total_0*dt);
-        prob_migration_1=1-math.exp(-migration_1*total_1*dt);
+        #prob_birth_0=1-math.exp(-birth_0*total_0*dt);
+        #prob_death_0=1-math.exp(-death_0*total_0*dt);
+        #prob_birth_1=1-math.exp(-birth_1*total_1*dt);
+        #prob_death_1=1-math.exp(-death_1*total_1*dt);
+        #prob_migration_0=1-math.exp(-migration_0*total_0*dt);
+        #prob_migration_1=1-math.exp(-migration_1*total_1*dt);
         #Poisson distribution, probability of no events in time dt
-        prob_of_no_event=math.exp((-birth_0*dt+-death_0*dt+-migration_0*dt)*total_0+(-birth_1*dt+-death_1*dt+-migration_1*dt)*total_1);
-
-        #row_for_choosing 0:birth_0, 1:death_0, 2:birth_1, 3:death_1, 4:migration_0, 5:migratoin_1, 6:no event    
-        row_for_choosing=range(7);
-        row_for_choosing[0]=prob_birth_0;
-        row_for_choosing[1]=row_for_choosing[0]+prob_death_0;
-        row_for_choosing[2]=row_for_choosing[1]+prob_birth_1;
-        row_for_choosing[3]=row_for_choosing[2]+prob_death_1;
-        row_for_choosing[4]=row_for_choosing[3]+prob_migration_0;
-        row_for_choosing[5]=row_for_choosing[4]+prob_migration_1;
-        row_for_choosing[6]=row_for_choosing[5]+prob_of_no_event;
-        #normalize
-        for i in range(len(row_for_choosing)):
-            row_for_choosing[i]=row_for_choosing[i]/row_for_choosing[6];
-                    
-        #print row_for_choosing ;       
-        event_number=GetEvent(row_for_choosing);
-        #print "event number "+str(event_number);
+        #prob_of_no_event=math.exp((-birth_0*dt+-death_0*dt+-migration_0*dt)*total_0+(-birth_1*dt+-death_1*dt+-migration_1*dt)*total_1);
         in_0_copy=in_0.copy()
         in_1_copy=in_1.copy()
         all_lineages=in_0_copy.union(in_1_copy);
         all_lineages_copy=all_lineages.copy();
+        print("all lineages "+str(in_0)+str(in_1));
         if(len(all_lineages)==0):
             print "all died"
             return -1;
-        
         random_list=range(len(in_0));
         for i in range(len(in_0)):
             random_list[i]=in_0_copy.pop();
@@ -181,6 +168,37 @@ def CreatePopulation(birth_0, death_0, birth_1, death_1, migration_1, migration_
             random_list[i]=all_lineages_copy.pop();
         random.shuffle(random_list);
         random_index_all=random_list[0];
+        #row_for_choosing 0:birth_0, 1:death_0, 2:birth_1, 3:death_1, 4:migration_0, 5:migration_1    
+        row_for_choosing=range(6);
+        if(len(in_0)==0):
+            row_for_choosing[0]=0;
+            row_for_choosing[1]=0;
+            row_for_choosing[2]=0;
+        else:
+            row_for_choosing[0]=birth_0;
+            row_for_choosing[1]=row_for_choosing[0]+death_0;
+            row_for_choosing[2]=row_for_choosing[1]+migration_0;
+        if(len(in_1)==0):
+            row_for_choosing[3]=0+row_for_choosing[0];
+            row_for_choosing[4]=0+row_for_choosing[0];
+            row_for_choosing[5]=0+row_for_choosing[0];
+        else:
+            row_for_choosing[3]=row_for_choosing[2]+birth_1;
+            row_for_choosing[4]=row_for_choosing[3]+death_1;
+            row_for_choosing[5]=row_for_choosing[4]+migration_1;
+
+        #normalize
+        sum=0;
+        for i in range(len(row_for_choosing)):
+            sum=sum+row_for_choosing[i];
+        #print("not normalized "+str(row_for_choosing));
+        print("normalizing constant "+str(row_for_choosing[len(row_for_choosing)-1]));
+        for i in range(len(row_for_choosing)):
+            row_for_choosing[i]=row_for_choosing[i]/row_for_choosing[len(row_for_choosing)-1];
+        #print(row_for_choosing[len(row_for_choosing)-1]);
+        #print(row_for_choosing);       
+        event_number=GetEvent(row_for_choosing);
+        print "event number "+str(event_number);    
         
         if(event_number==0):#birth 0
             #print "birth 0";
@@ -192,17 +210,17 @@ def CreatePopulation(birth_0, death_0, birth_1, death_1, migration_1, migration_
             index_to_die=random_index_0;
             nodes=Death(index_to_die,time,nodes);
             in_0.remove(index_to_die);
-        if(event_number==2):#birth 1
+        if(event_number==3):#birth 1
             #print "birth 1";
             index_to_birth=random_index_1;
             (nodes, new_index)=Birth(index_to_birth,time,nodes);
             in_1.update([new_index]);
-        if(event_number==3):#death 1
+        if(event_number==4):#death 1
             #print "death 1";
             index_to_die=random_index_1;
             nodes=Death(index_to_die,time,nodes);
             in_1.remove(index_to_die);
-        if(event_number==4):#migration 0
+        if(event_number==2):#migration 0
             #print "migration 0";
             index_to_migrate=random_index_all;
             nodes=Migration(index_to_migrate,time,nodes,0)
@@ -235,7 +253,7 @@ def CreatePopulation(birth_0, death_0, birth_1, death_1, migration_1, migration_
             if(len(common_rel)==0):
                 all_related=False;
         #print("j "+str(j));
-        if j==100000:
+        if j==10000:
             all_related=True;
             print("forced quit");
         
@@ -245,7 +263,7 @@ def CreatePopulation(birth_0, death_0, birth_1, death_1, migration_1, migration_
 def GetEvent(row_for_choosing):
 
     n=random.uniform(0,1);
-    #(str(n)+"random")
+    print(str(n)+"random")
     for i in range(len(row_for_choosing)):
         if(i==0):
             if(0<=n<row_for_choosing[i]):

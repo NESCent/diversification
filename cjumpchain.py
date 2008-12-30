@@ -135,6 +135,7 @@ def CombOfNegative(n,k,terms=20):
     log_k_fact=LogFactorialOfNegative(k,terms)
     log_n_fact_over_k_fact=log_n_fact-log_k_fact
     log_n_minus_k_fact=LogFactorialOfNegative(n-k,terms)
+    #print(str(pow(10,log_n_fact_over_k_fact-log_n_minus_k_fact))+" comb of Neg");
     return  pow(10,log_n_fact_over_k_fact-log_n_minus_k_fact)
 
 def GetEvents():
@@ -829,9 +830,20 @@ def CalculateLogPi(j_species, sigma):
         combination= float(CombOfNegative(b/alpha+j_species-1,j_species))
     else:
         combination = float(comb(b/alpha+j_species-1,j_species))
-    coefficient = math.log(combination,alpha/mu)
+
+    #print(combination);
+   # print(alpha/mu);
+    try:
+        coefficient = math.log(combination,alpha/mu)
+    except OverflowError:
+        print("beta "+str(b));
+        print("j_species "+str(j_species));
+        print("alpha "+str(alpha));
+        print("mu "+str(mu));
+        print("combination "+str(combination)+" base "+str(alpha/mu));
+        
     ratio = float(j_species)
-    ratio2 = math.log(pow(float(1-alpha/mu),-b/alpha),alpha/mu)
+    ratio2 = -b/alpha*math.log(pow(float(1-alpha/mu),1),alpha/mu)
     return coefficient+ratio+ratio2
 
 #I got this function from R documentation
@@ -1748,11 +1760,11 @@ def MakeTransitionMatrixForLevel(level_number, sigma):
         #Equal is defined in this class to test two numbers are so close
         #they're considered "equal" - use this is b/c == is hard
         #to apply to float numbers. 
-        assert(Equal(testing.sum(), solution[row]))
+        #assert(Equal(testing.sum(), solution[row]))
         for j in range(len(testing)):
             testing[j] = testing[j]/solution[row]
         Normalize(testing2)  
-        assert(allclose(testing,testing2))
+#        assert(allclose(testing,testing2))
         
         Normalize(transition_matrix[row])
     # =================================================================
@@ -1823,6 +1835,7 @@ def MakeTransitionMatricesbyLevels(G, delta, sigma):
 
     # range(n_leaves, 1, -1) is [n_leaves, n_leaves-1, ..., 2]
     for j in range(n_leaves, 1, -1):
+
         (x, y, z) = MakeTransitionMatrixForLevel(j, sigma)
         transition_matrices.append(x)
         state_to_index_in_transition_matrices.append(y)
@@ -2136,9 +2149,13 @@ def MovetoNextLevel(current_state, current_delta, all_delta_earlier, all_delta_l
     x_1 = current_state[2]
     x_2 = current_state[3]
     current_x_1_index = current_level.end_node.children[0].index
-    current_x_2_index = current_level.end_node.children[1].index 
-    next_x_1_index = next_level.end_node.children[0].index
-    next_x_2_index = next_level.end_node.children[1].index
+    current_x_2_index = current_level.end_node.children[1].index
+    if(len(next_level.lineages)==1):
+        next_x_1_index = -1
+        next_x_2_index = -1
+    else:        
+        next_x_1_index = next_level.end_node.children[0].index
+        next_x_2_index = next_level.end_node.children[1].index
     next__level_speciating_lineage_index=next_level.begin_node.index
     assert(next_level.begin_node.index==current_level.end_node.index)#just a check
     new_index=next__level_speciating_lineage_index
@@ -2161,7 +2178,10 @@ def MovetoNextLevel(current_state, current_delta, all_delta_earlier, all_delta_l
 
         assert(q_t>=1)#this should be a given by the structure of the transition matrix
         if (q_t >= 1):
-            return ((q_t-1, r_t, current_delta[next_x_1_index], current_delta[next_x_2_index]),current_delta,all_delta_earlier,all_delta_later)
+            if(len(next_level.lineages)==1):
+                return ((q_t-1, r_t, -1, -1),current_delta,all_delta_earlier,all_delta_later);
+            else:
+                return ((q_t-1, r_t, current_delta[next_x_1_index], current_delta[next_x_2_index]),current_delta,all_delta_earlier,all_delta_later)
     if (x_1==1 and x_2==1):#stt
         current_delta.update({new_index:1})
         all_delta_earlier.update({new_index:1})
@@ -2169,7 +2189,10 @@ def MovetoNextLevel(current_state, current_delta, all_delta_earlier, all_delta_l
 
         assert(r_t>=1)#this should be a given by the structure of the transition matrix
         if (r_t >= 1):
-            return ((q_t, r_t-1, current_delta[next_x_1_index], current_delta[next_x_2_index]),current_delta,all_delta_earlier,all_delta_later)
+            if(len(next_level.lineages)==1):
+                return ((q_t, r_t-1, -1, -1),current_delta,all_delta_earlier,all_delta_later);
+            else:
+                return ((q_t, r_t-1, current_delta[next_x_1_index], current_delta[next_x_2_index]),current_delta,all_delta_earlier,all_delta_later)
     if ((x_1==1 and x_2==0) or(x_1==0 and x_2==1)):#sbt
         current_delta.update({new_index:0})
         all_delta_earlier.update({new_index:0})
@@ -2178,11 +2201,14 @@ def MovetoNextLevel(current_state, current_delta, all_delta_earlier, all_delta_l
         #(1,0) --> 0 so r_t decreases by 1
         assert(r_t>=1)
         if (r_t >=1):#this should be a given by the structure of the transition matrix
-            return ((q_t, r_t-1, current_delta[next_x_1_index], current_delta[next_x_2_index]),current_delta,all_delta_earlier,all_delta_later)
+            if(len(next_level.lineages)==1):
+                return ((q_t, r_t-1, -1,-1),current_delta,all_delta_earlier,all_delta_later);
+            else:
+                return ((q_t, r_t-1, current_delta[next_x_1_index], current_delta[next_x_2_index]),current_delta,all_delta_earlier,all_delta_later)
 
 def Test(G):
     sigma=(0.10000000000000001, 0.040000000000000012, 50, 0.090000000000000003, 0.10000000000000001)
-    delta={0:1,1:1,2:1,3:1}
+    delta={0:0,1:1,2:1,3:1}
     alpha=sigma[3]
     mu=sigma[4]
     if(alpha>mu):
@@ -2193,6 +2219,7 @@ def Test(G):
 
 def SampleFromIS(G, delta, sigma, (transition_matrices, state_to_index_in_transition_matrices, index_in_transition_matrices_to_state)):
     """
+    IMPORTANT: DO NOT ALLOW MIGRATION IN ROOT LINEAGE
     This function assigns migrations (i.e., character state changes) to the
     branches of G, with migrations being drawn from a probability
     distribition such that the density of one assignment of migrations M is
@@ -2432,7 +2459,9 @@ def SampleFromIS(G, delta, sigma, (transition_matrices, state_to_index_in_transi
     alpha=sigma[3]
     mu=sigma[4]
     if(alpha>mu):
-        return("error, alpha is greater than mu")
+        #print(alpha);
+        #print(mu);
+        return("!!error, alpha is greater than mu")
     # In what follows, uncond is short for unconditional (i.e., not
     # conditioned on the tree), and cond is short for conditional (i.e., 
     # conditioned on the tree). And  prob, of course, is short for probability.
@@ -2471,7 +2500,7 @@ def SampleFromIS(G, delta, sigma, (transition_matrices, state_to_index_in_transi
     all_delta_later=delta.copy()
 
     while not current_level_number == 1:
-       # print("level "+str(current_level_number))
+        #print("level "+str(current_level_number))
         # Note: the following, and all assignments in fact, are copies by
         # reference, since all an assignment does in python 
         # is to map a name to an object.
@@ -2544,7 +2573,7 @@ def SampleFromIS(G, delta, sigma, (transition_matrices, state_to_index_in_transi
                 index_of_current_state = index_of_next_state
             else:
                 next_level_number = current_level_number-1
-                if(next_level_number!=1):
+                if(next_level_number!=0):
                     next_level = G.levels[n_leaves - next_level_number]
                     # The chain wants to move to the next level (to level k-1 if
                     # the current level is k). 
@@ -2570,17 +2599,23 @@ def SampleFromIS(G, delta, sigma, (transition_matrices, state_to_index_in_transi
                     # (c) initialize the event history for the next level with
                     #     the updated delta
                     (initial_state_in_the_next_level,current_delta,all_delta_earlier, all_delta_later) = MovetoNextLevel(state_of_cond_jump_chain, current_delta, all_delta_earlier, all_delta_later, current_level, next_level)
+                    #print((initial_state_in_the_next_level,current_delta,all_delta_earlier, all_delta_later));
+                    #print(current_level_number);
+                    #print(next_level_number);
                     # and *now* update the state of the chain
                     state_of_cond_jump_chain = initial_state_in_the_next_level
                     # update current level number
                 current_level_number=next_level_number
     
             probability_of_history = probability_of_history * probability_of_transition
+    current_level = G.levels[n_leaves - 1]
+    current_level.event_history.append(current_delta)   
 
     return(probability_of_history,all_delta_earlier, all_delta_later)            
 
 def PrepareTree():
     """
+                  |
                   n6
                /     \
               /       \
@@ -2590,11 +2625,11 @@ def PrepareTree():
           /  \       /    \
         n0   n1     n2    n3
 
-    3 levels: from top: 2,3,4
+    4 levels: from top: 1,2,3,4
 
     num_leaves=4
 
-    so tree.levels[j] is level 4-j, j=(0,1,2)
+    so tree.levels[j] is level 4-j, j=(0,1,2,3)
     """
     #G.levels[0].end_node is the parent of the first two coalescing
     # lineages.
@@ -2661,6 +2696,14 @@ def PrepareTree():
     n4.parent = n6
     n5.parent = n6
     n6.parent = "None"
+
+    l1 = Level()
+    l1.begin_time=-5
+    l1.end_time=-4
+    l1.lineages = [n6]
+    l1.begin_node = n6
+    l1.end_node = -1
+    l1.event_history = []
     
     l2 = Level()
     l2.begin_time=-4
@@ -2686,7 +2729,7 @@ def PrepareTree():
     l4.end_node = n4
     l4.event_history = []
     
-    levels = [l4,l3,l2] #so levels[0] is the most recent level, aka the tips
+    levels = [l4,l3,l2,l1] #so levels[0] is the most recent level, aka the tips
     
     x = Tree()
     x.all_leaves = [n0,n1,n2,n3]

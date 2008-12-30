@@ -11,6 +11,7 @@ import re
 from scipy.misc import comb
 import cjumpchain
 import math
+import is_classes
 
 
 def GetNumberOfLevels(A):
@@ -19,7 +20,7 @@ def GetNumberOfLevels(A):
 def GetLevelLength(A,level):
     n=A.num_leaves
     current_level=A.levels[n-level]
-    branch_length=current_level.begin_time-current_level.end_time
+    branch_length=current_level.end_time-current_level.begin_time
     return branch_length
 
 def GetNumberOfMigrationEvents(A,level):
@@ -50,11 +51,11 @@ def GetQ_bbAndQ_bt(A,level,all_delta_earlier,all_delta_later):
                 child_2_index=child_2.index
                 #print("children "+str(child_1_index)+" "+str(child_2_index))
             #print("first child state "+str(all_delta_earlier[child_1_index])+" other "+str(all_delta_earlier[child_2_index]))
-            if(all_delta_earlier[child_1_index]==1 or all_delta_earlier[child_2_index]==1):
-                q_bt=q_bt+1
+                if(all_delta_earlier[child_1_index]==1 or all_delta_earlier[child_2_index]==1):
+                    q_bt=q_bt+1
                 #print("added to q_bt")
-            if(all_delta_earlier[child_1_index]==0 and all_delta_earlier[child_2_index]==0):
-                q_bb=q_bb+1
+                if(all_delta_earlier[child_1_index]==0 and all_delta_earlier[child_2_index]==0):
+                    q_bb=q_bb+1
                 #print("added to q_bb")
                             
             #found="FALSE"
@@ -94,6 +95,9 @@ def GetQ_bbAndQ_bt(A,level,all_delta_earlier,all_delta_later):
 
 def ForwardProbMIG(A,sigma,all_delta_earlier,all_delta_later):
     """
+    IMPORTANT: I am skipping the last level in the multiplication because it is impossible to calculate ForwardRateSBB
+    or ForwardRateSBT in the last level.
+    
     Calculates the probability of all SBArrowT events which is equivalent to
     P(MIG(theta)|sigma)
     Input Parameters
@@ -101,15 +105,17 @@ def ForwardProbMIG(A,sigma,all_delta_earlier,all_delta_later):
     @param A        the tuple (theta,BRL(theta),MIG(theta))
     @param level    the level in the tree
     """
-    # level is 1 here for no particular reason, just need n's value which is independent of level
     n=GetNumberOfLevels(A)
     mult=1
-    for level in range(2,n+1):
+    for level in range(1,n):
         l=GetLevelLength(A,level)
         k=GetNumberOfMigrationEvents(A,level)
-        if(k>0):
-            (q_bb,q_bt)=GetQ_bbAndQ_bt(A,level,all_delta_earlier,all_delta_later)
-            mult=mult*ProbKMigrationInL(A,level,l,k,q_bb,q_bt,sigma)
+        #("number of migration events in level "+str(level)+" is "+str(k));
+        #if(k>0):
+        (q_bb,q_bt)=GetQ_bbAndQ_bt(A,level,all_delta_earlier,all_delta_later)
+        #("level "+str(level));
+        #("mult "+str(ProbKMigrationInL(A,level,l,k,q_bb,q_bt,sigma)));
+        mult=mult*ProbKMigrationInL(A,level,l,k,q_bb,q_bt,sigma)
 
     return mult        
 
@@ -150,7 +156,7 @@ def GetYi(A,i):
     set_bifurcated_lineage_index=set_lineage_indices_level_i.difference(set_lineage_indices_next_level)
     new_lineages_indices=[set_new_lineages_indices.pop(),set_new_lineages_indices.pop()]
     bifurcated_lineage_index=set_bifurcated_lineage_index.pop()
-    #print(level_i_event_history[0][4])
+    #(level_i_event_history[0][4])
     #print(bifurcated_lineage_index)
     character_bifurcated=level_i_event_history[0][bifurcated_lineage_index]
     character_new_1=next_level_event_history[0][new_lineages_indices[0]]
@@ -182,8 +188,14 @@ def GetH(X,i,A,sigma,all_delta_earlier,all_delta_later):
     """
     n=A.num_leaves
     (q_bb,q_bt)=GetQ_bbAndQ_bt(A,i,all_delta_earlier,all_delta_later)
-    #print("level "+str(i))
+    #print(A.levels[2].event_history);
+    #print(A.levels[1].event_history);
+    #print(A.levels[0].event_history);
+    #("level "+str(i))
+    #("q_bb "+str(q_bb));
+    #("q_bt "+str(q_bt));
     q_b_arrow_t=len(A.levels[n-i].event_history)-1
+    #("q_b_arrow_t "+str(q_b_arrow_t));
     r_t=i-q_b_arrow_t-q_bb-q_bt
     if(X=='s_tt'):
         return ForwardRateSTT((r_t,q_bb,q_b_arrow_t,q_bt),sigma)
@@ -199,18 +211,23 @@ def ForwardProbThetaAndBRLGivenMIG(A,sigma,all_delta_earlier,all_delta_later):
     n=GetNumberOfLevels(A)
     mult=1
     for i in range(2,n):
-        #print(str(i)+" i");
+        #(str(i)+" i");
         l_i=GetLevelLength(A,i)
         hbar_i=GetHBar(i,A,sigma,all_delta_earlier,all_delta_later)
         #print(i);
         #print(str(hbar_i)+" hbar_i");
         Y_i=GetYi(A,i)
         #print(str(Y_i)+" Y_i");
+        #(hbar_i*math.exp(-hbar_i*l_i)*GetH(Y_i,i,A,sigma,all_delta_earlier,all_delta_later)/hbar_i);
         mult=mult*hbar_i*math.exp(-hbar_i*l_i)*GetH(Y_i,i,A,sigma,all_delta_earlier,all_delta_later)/hbar_i
+        #(str(mult)+" mult");
 
-    #l_n=GetLevelLength(A,n)
-    #hbar_n=GetHBar(n,A,sigma,all_delta_earlier,all_delta_later)
-    #mult=mult*hbar_n*math.exp(-hbar_n*l_n)
+    l_n=GetLevelLength(A,n)
+    #("lastlength "+str(l_n));
+    hbar_n=GetHBar(n,A,sigma,all_delta_earlier,all_delta_later)
+    #("lasthbar_n "+str(hbar_n));
+    #("last mult "+str(hbar_n*math.exp(-hbar_n*l_n)));
+    mult=mult*hbar_n*math.exp(-hbar_n*l_n)
     return mult
 
 def ForwardProbAGivenSigma(A,sigma, all_delta_earlier,all_delta_later):
@@ -219,13 +236,14 @@ def ForwardProbAGivenSigma(A,sigma, all_delta_earlier,all_delta_later):
     """ 
     a=ForwardProbThetaAndBRLGivenMIG(A,sigma,all_delta_earlier,all_delta_later)
     b=ForwardProbMIG(A,sigma, all_delta_earlier,all_delta_later)
-    #print("parts of Forward Prob A "+str(a)+" "+str(b))
+    #("parts of Forward Prob A "+str(a)+" "+str(b))
     return a*b
         
         
     
 def ProbKMigrationInL(A,level,l,k,q_bb,q_bt,sigma):
     """
+    IMPORTANT: edit summation and multiplication so they start out at zero
     Returns the forward probability of the k migrations that occur in the level. Defined in equation 29.
     Input Parameters
     ---------------
@@ -243,10 +261,15 @@ def ProbKMigrationInL(A,level,l,k,q_bb,q_bt,sigma):
     coef=1
     q_b_arrow_t=len(A.levels[n-level].event_history)-1
     r_t=level-q_b_arrow_t-q_bb-q_bt
-    for i in range(1,k+1):
+    #("level "+str(level));
+    #("number of migrations, k "+str(k));
+    #("duration of level "+str(l));
+    for i in range(0,k+1):
+        #("Phi "+str(Phi(i,(r_t,q_bb,q_b_arrow_t,q_bt),sigma)));
         coef=coef*Phi(i,(r_t,q_bb,q_b_arrow_t,q_bt),sigma)
     sum=0
-    for j in range(1,k+1):
+    for j in range(0,k+1):
+        #("sum "+str(PhiJK(j,k,(r_t,q_bb,q_b_arrow_t,q_bt),sigma)*math.exp(-Phi(j,(r_t,q_bb,q_b_arrow_t,q_bt),sigma)*l)));
         sum=sum+PhiJK(j,k,(r_t,q_bb,q_b_arrow_t,q_bt),sigma)*math.exp(-Phi(j,(r_t,q_bb,q_b_arrow_t,q_bt),sigma)*l)                                                                   
     #print("prob k migrations in l for level "+str(level)+" is "+str(coef*sum))
     return coef*sum
@@ -340,6 +363,7 @@ def ForwardRateSTT(current_state,sigma,num_sum=20):
     #print("coefficient "+str(coefficient));
     sum=0
     current_state_for_uncond_probs=(current_state[1]+current_state[2]+current_state[3],current_state[0])
+    #(current_state_for_uncond_probs);
     for k in range(r_t,r_t+num_sum):
         if (k!=0):
             #In case k=0, we don't want division by 0
@@ -402,7 +426,10 @@ def ForwardRateSBT(current_state,sigma,num_sum=20):
 
     #print("ForwardSBT "+str( b*q_bt/float(B)));   
 
-    return b*q_bt/float(B)
+    answer= b*q_bt/float(B)
+    if answer==0:
+        return 1;
+    return answer
 
 def ForwardRateSBArrowT(current_state,sigma,num_sum=20):
     """
@@ -508,14 +535,24 @@ def LikelihoodOfParameters(G, delta, sigma):
         # 
         # For example, IS could be the
         # distribution Upsilon in page 12, paragraph 2, line 3.
-        (density_of_A, all_delta_earlier,all_delta_later) = cjumpchain.SampleFromIS(G, delta, sigma,
-                (transition_matrices, state_to_index_in_transition_matrices,index_in_transition_matrices_to_state)) 
-                    
+        G_prime=is_classes.Tree.Copy(G);
+        #("G")
+        #(G_prime.levels[2].event_history);
+        #(G_prime.levels[1].event_history);
+        #(G_prime.levels[0].event_history);
+        #print("here1");
+        #print(cjumpchain.SampleFromIS(G_prime, delta, sigma,(transition_matrices, state_to_index_in_transition_matrices,index_in_transition_matrices_to_state)) )
+        (density_of_A, all_delta_earlier,all_delta_later) = cjumpchain.SampleFromIS(G_prime, delta, sigma,(transition_matrices, state_to_index_in_transition_matrices,index_in_transition_matrices_to_state)) 
+        #("here2");            
         # SampleFromIS augments G with migration events. So A can now be
         # used in place of G.
         # calculate forward probability of A given sigma, Pr(A | sigma) 
         # according to the procedure described in Section 5.4.
-        A=G
+        A=G_prime
+        #print("A");
+        #print(A.levels[2].event_history);
+        #print(A.levels[1].event_history);
+        #print(A.levels[0].event_history);
         forward_probability_of_A_given_sigma = ForwardProbAGivenSigma(A,sigma,all_delta_earlier,all_delta_later)
         #print("forward "+str(forward_probability_of_A_given_sigma ))
         #print("density "+str(density_of_A))

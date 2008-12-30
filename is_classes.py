@@ -1,3 +1,7 @@
+class Callable:
+    def __init__(self, anycallable):
+        self.__call__ = anycallable
+        
 class Tree:
     """The class description of a tree.
     
@@ -43,6 +47,15 @@ class Tree:
         self.root = None
         self.name = None
         self.levels = []
+        
+    def Copy(self):
+        import cjumpchain;
+        G_prime=cjumpchain.PrepareTree();
+        return G_prime;
+    Copy = Callable(Copy)
+        
+        
+
 
 class Level:
     """
