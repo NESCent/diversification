@@ -75,9 +75,11 @@ def MetropolisHastings(delta, runs, a):
         
         ProbGGivenSigmaStar = is_likelihood.LikelihoodOfParameters(G, delta, sigmaStar)
         print("ProbGGivenSigmaStar "+str(ProbGGivenSigmaStar));
+        print("with sigma star "+str(sigmaStar));
         print("wStarOfSigma "+str(wStarOfSigma));
         ProbGGivenSigma = is_likelihood.LikelihoodOfParameters(G, delta, sigma)
         print("ProbGGivenSigma "+str(ProbGGivenSigma));
+        print("with sigma "+str(sigma));
         print("wOfSigma "+str(wOfSigma));
         hastingsRatio= ProbGGivenSigmaStar *wStarOfSigma/ (ProbGGivenSigma * wOfSigma)*ratio_of_B
         print("hasting Ratio "+str(hastingsRatio));

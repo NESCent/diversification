@@ -110,11 +110,11 @@ def ForwardProbMIG(A,sigma,all_delta_earlier,all_delta_later):
     for level in range(1,n):
         l=GetLevelLength(A,level)
         k=GetNumberOfMigrationEvents(A,level)
-        #("number of migration events in level "+str(level)+" is "+str(k));
+        ("number of migration events in level "+str(level)+" is "+str(k));
         #if(k>0):
         (q_bb,q_bt)=GetQ_bbAndQ_bt(A,level,all_delta_earlier,all_delta_later)
-        #("level "+str(level));
-        #("mult "+str(ProbKMigrationInL(A,level,l,k,q_bb,q_bt,sigma)));
+        print("level "+str(level));
+        print("mult "+str(ProbKMigrationInL(A,level,l,k,q_bb,q_bt,sigma)));
         mult=mult*ProbKMigrationInL(A,level,l,k,q_bb,q_bt,sigma)
 
     return mult        
@@ -271,7 +271,7 @@ def ProbKMigrationInL(A,level,l,k,q_bb,q_bt,sigma):
     for j in range(0,k+1):
         #("sum "+str(PhiJK(j,k,(r_t,q_bb,q_b_arrow_t,q_bt),sigma)*math.exp(-Phi(j,(r_t,q_bb,q_b_arrow_t,q_bt),sigma)*l)));
         sum=sum+PhiJK(j,k,(r_t,q_bb,q_b_arrow_t,q_bt),sigma)*math.exp(-Phi(j,(r_t,q_bb,q_b_arrow_t,q_bt),sigma)*l)                                                                   
-    #print("prob k migrations in l for level "+str(level)+" is "+str(coef*sum))
+    print("prob k migrations in l for level "+str(level)+" is "+str(coef*sum))
     return coef*sum
 
 def PhiJK(j,k,(r_t,q_bb,q_b_arrow_t,q_bt),sigma):
@@ -297,11 +297,16 @@ def PhiJK(j,k,(r_t,q_bb,q_b_arrow_t,q_bt),sigma):
         product=1
     else:
         for i in range(1,j):
-            product=product*(Phi(i,(r_t,q_bb,q_b_arrow_t,q_bt),sigma)-Phi(j,(r_t,q_bb,q_b_arrow_t,q_bt),sigma))
+            to_mult=(Phi(i,(r_t,q_bb,q_b_arrow_t,q_bt),sigma)-Phi(j,(r_t,q_bb,q_b_arrow_t,q_bt),sigma));
+            print(to_mult);
+            product=product*to_mult;
   
     if(j!=k):
         for i in range(j+1,k+1):
-            product=product*(Phi(i,(r_t,q_bb,q_b_arrow_t,q_bt),sigma)-Phi(j,(r_t,q_bb,q_b_arrow_t,q_bt),sigma))
+            to_mult=(Phi(i,(r_t,q_bb,q_b_arrow_t,q_bt),sigma)-Phi(j,(r_t,q_bb,q_b_arrow_t,q_bt),sigma))
+            print(to_mult);
+            product=product*to_mult;
+            
     
     return pow(product,-1)        
 
@@ -355,7 +360,7 @@ def ForwardRateSTT(current_state,sigma,num_sum=20):
           
     """
     r_t=current_state[0]
-   # print("rt "+str(r_t));
+    #print("rt "+str(r_t));
     #print("current_state " +str(current_state));
     alpha=sigma[3]
     #print("alpha "+str(alpha));
@@ -365,10 +370,9 @@ def ForwardRateSTT(current_state,sigma,num_sum=20):
     current_state_for_uncond_probs=(current_state[1]+current_state[2]+current_state[3],current_state[0])
     #(current_state_for_uncond_probs);
     for k in range(r_t,r_t+num_sum):
-        if (k!=0):
-            #In case k=0, we don't want division by 0
-            sum=sum+ float(cjumpchain.CalculatePiStar(k-1,current_state_for_uncond_probs,sigma,num_sum))/k
-            #print("sum "+str(cjumpchain.CalculatePiStar(k-1,current_state_for_uncond_probs,sigma,num_sum)));
+        to_add=float(cjumpchain.CalculatePiStar(k,current_state_for_uncond_probs,sigma,num_sum))/(k+1)
+        #print("sum with k equal "+str(k)+" is "+str(to_add));
+        sum=sum+to_add
     #print("Forward STT "+str(coefficient*sum));
     return coefficient*sum
 
@@ -456,7 +460,7 @@ def ForwardRateSBArrowT(current_state,sigma,num_sum=20):
     B=sigma[2]
     b=sigma[1]
 
-    #print("ForwardSBarrowT "+str(b*q_b_arrow_t/float(B)));
+    print("ForwardSBarrowT "+str(b*q_b_arrow_t/float(B)));
     return b*q_b_arrow_t/float(B)
 
 

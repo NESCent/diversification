@@ -820,6 +820,7 @@ def CalculateLogPi(j_species, sigma):
     alpha = sigma[3]
     b = sigma[1]
     mu = sigma[4]
+    coefficient=1;
     if(alpha>mu):
 
         #print("Error, alpha is greater than mu")        
@@ -832,7 +833,7 @@ def CalculateLogPi(j_species, sigma):
         combination = float(comb(b/alpha+j_species-1,j_species))
 
     #print(combination);
-   # print(alpha/mu);
+    #print(alpha/mu);
     try:
         coefficient = math.log(combination,alpha/mu)
     except OverflowError:
