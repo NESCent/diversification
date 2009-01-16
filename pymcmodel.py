@@ -99,3 +99,8 @@ def CalculateGamma(x, alpha, beta):
     #                               --------------------------------------
     #                                        Big-Gamma(alpha)
     return beta**(alpha) * math.exp(-beta*x) * x**(alpha-1) / scipy.special.gamma(alpha)
+
+if __name__ == "__main__":
+    sigma = MetropolisHastings({0:0, 1:1, 2:1, 3:1}, 1, .1);
+    print sigma;
+    print "amazing";
