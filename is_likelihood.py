@@ -113,8 +113,8 @@ def ForwardProbMIG(A,sigma,all_delta_earlier,all_delta_later):
         ("number of migration events in level "+str(level)+" is "+str(k));
         #if(k>0):
         (q_bb,q_bt)=GetQ_bbAndQ_bt(A,level,all_delta_earlier,all_delta_later)
-        print("level "+str(level));
-        print("mult "+str(ProbKMigrationInL(A,level,l,k,q_bb,q_bt,sigma)));
+        #print("level "+str(level));
+        #print("mult "+str(ProbKMigrationInL(A,level,l,k,q_bb,q_bt,sigma)));
         mult=mult*ProbKMigrationInL(A,level,l,k,q_bb,q_bt,sigma)
 
     return mult        
@@ -271,7 +271,7 @@ def ProbKMigrationInL(A,level,l,k,q_bb,q_bt,sigma):
     for j in range(0,k+1):
         #("sum "+str(PhiJK(j,k,(r_t,q_bb,q_b_arrow_t,q_bt),sigma)*math.exp(-Phi(j,(r_t,q_bb,q_b_arrow_t,q_bt),sigma)*l)));
         sum=sum+PhiJK(j,k,(r_t,q_bb,q_b_arrow_t,q_bt),sigma)*math.exp(-Phi(j,(r_t,q_bb,q_b_arrow_t,q_bt),sigma)*l)                                                                   
-    print("prob k migrations in l for level "+str(level)+" is "+str(coef*sum))
+    #print("prob k migrations in l for level "+str(level)+" is "+str(coef*sum))
     return coef*sum
 
 def PhiJK(j,k,(r_t,q_bb,q_b_arrow_t,q_bt),sigma):
@@ -298,13 +298,13 @@ def PhiJK(j,k,(r_t,q_bb,q_b_arrow_t,q_bt),sigma):
     else:
         for i in range(1,j):
             to_mult=(Phi(i,(r_t,q_bb,q_b_arrow_t,q_bt),sigma)-Phi(j,(r_t,q_bb,q_b_arrow_t,q_bt),sigma));
-            print(to_mult);
+            #print(to_mult);
             product=product*to_mult;
   
     if(j!=k):
         for i in range(j+1,k+1):
             to_mult=(Phi(i,(r_t,q_bb,q_b_arrow_t,q_bt),sigma)-Phi(j,(r_t,q_bb,q_b_arrow_t,q_bt),sigma))
-            print(to_mult);
+            #print(to_mult);
             product=product*to_mult;
             
     
@@ -460,7 +460,7 @@ def ForwardRateSBArrowT(current_state,sigma,num_sum=20):
     B=sigma[2]
     b=sigma[1]
 
-    print("ForwardSBarrowT "+str(b*q_b_arrow_t/float(B)));
+    #print("ForwardSBarrowT "+str(b*q_b_arrow_t/float(B)));
     return b*q_b_arrow_t/float(B)
 
 
