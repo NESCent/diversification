@@ -23,6 +23,19 @@ import random
 import sys
 import math
 
+#These strings are supposed to be constants. 
+SMALLER_S_BT = "smaller_s_bt"
+SMALLER_S_TT = "smaller_s_tt"
+SMALLER_S_BB = "smaller_s_bb"
+KAPPA = "kappa"
+M_1 = "m_1"
+M_2 = "m_2"
+SMALLER_S_B_ARROW_T = "smaller_s_b_arrow_t"
+S_BT = "s_bt"
+S_BB = "s_bb"
+S_TT = "s_tt"
+S_B_ARROW_T_GLOBAL = "s_b_arrow_t_global"
+ 
 #sys.path=[sys.path,'/Network/Servers/orrorin.nescent.org/Volumes/xraid/home/alexandrabalaban/Documents/Summer2008']
 #sys.path=[sys.path,'C:\Documents and Settings\Perry Zheng\workspace\Summer2008\src']    
 #sys.path.append('C:\Users\Lonnie\Desktop\Summer2008_2\Summer2008\src')
@@ -193,15 +206,15 @@ def GetEvents():
     #kappa+smaller_s_tt = s_tt
     #kappa+smaller_s_bt = s_bt
     #kappa+smaller_s_bb = s_bb  
-    bigbig_K = set(['kappa', 'smaller_s_tt', 'smaller_s_bt', 'smaller_s_bb'])
+    bigbig_K = set([KAPPA, SMALLER_S_TT, SMALLER_S_BT, SMALLER_S_BB])
 
-    # m_1 is the migration of next_coalescing_lineage1: i.e., lineage whose
+    # M_1 is the migration of next_coalescing_lineage1: i.e., lineage whose
     # state is state_of_next_coalescing_lineages_1;
-    # m_2 is the migration of next_coalescing_lineage1: i.e., lineage whose
+    # M_2 is the migration of next_coalescing_lineage1: i.e., lineage whose
     # state is state_of_next_coalescing_lineages_2;
     # 's_b_arrow_t' is any other migration
-    #Again, smaller_s_b_arrow_t = m_1+m_2
-    bigbig_M = set(['m_1', 'm_2', 'smaller_s_b_arrow_t'])
+    #Again, SMALLER_S_B_ARROW_T = m_1+m_2
+    bigbig_M = set([M_1, M_2, SMALLER_S_B_ARROW_T])
 
     # bigbig_H = bigbig_K union bigbig_M. 
     bigbig_H = bigbig_K.union(bigbig_M)
@@ -346,7 +359,7 @@ def GetCondJumpChainStateSpace(level_number):
     possible.
     
     From now on we will call such state the "four-element tuple" to avoid confusion
-    with "transition states." s
+    with "transition states." 
     """
     
     state_space=range(4*(level_number-1))
@@ -375,7 +388,7 @@ def IsValidState(z,level):
     Note we assume x_1 and x_2 are correctly from (0,1). This "validity"
     refers more to states that not possible due to configuration, not
     due to misspelling or typos. For instance, (5,0,1,0) is an invalid state
-    b/c next-coalescing lineage1's state could be 1 since there is no state 1 overall.
+    b/c next-coalescing lineage1's state is 1 and there is no state 1 overall.
     
     Return Value
     ------------
@@ -425,17 +438,17 @@ def ApplyEvent(z,w,level):
              page 20 eqn (24), we could view an event as an operator on the 
              state. w could be: 
              Speciation Events (collectively known as bigbig_K): 
-             "kappa"     The coalescence (convergence going backwards in time, 
+             KAPPA     The coalescence (convergence going backwards in time, 
                          or speciation going forward in time) of next-coalescing 
                          lineages
-             "smaller_s_tt"      The coalescence of lineages in (t,t,), (b,b) and (b,t) which aren't the next coalescing lineages.
-             "smaller_s_bb"      Note1: (b,t) is really a pseudo speciation event.
-             "smaller_s_bt"      Note2: these events cannot occur in the current model
+             SMALLER_S_TT      The coalescence of lineages in (t,t,), (b,b) and (b,t) which aren't the next coalescing lineages.
+             SMALLER_S_BB      Note1: (b,t) is really a pseudo speciation event.
+             SMALLER_S_BT      Note2: these events cannot occur in the current model
              
              Migration Events (collectively known as bigbig_M): 
-             "m_1"           migration of next-coalescing lineage1, the first lineage
+             M_1           migration of next-coalescing lineage1, the first lineage
                              in the next-coalescing lineage pair
-             "m_2"           migration of next-coalescing lineage2
+             M_2           migration of next-coalescing lineage2
              "s_b_arrow_t"   any other migration
              
              We denote bigbig_H = bigbig_K UNION bigbig_M
@@ -456,7 +469,7 @@ def ApplyEvent(z,w,level):
     
     Details
     -------
-    IMPORTANT: smaller_b_b_t, smaller_s_bb, and smaller_s_bt can never occur in the backwards probability calculation.
+    IMPORTANT:SMALLER_S_BT, SMALLER_S_BB, and SMALLER_S_TT can never occur in the backwards probability calculation.
     Therefore, return (-1,-1,-1,-1) as a signifier of an error. Also, return (-1,-1,-1,-1)
     if the input current state, z, is not valid, or if w, the transition, is not a valid event.
     """
@@ -467,11 +480,11 @@ def ApplyEvent(z,w,level):
     if (IsValidState(z,level)==False):
         return (-1,-1,-1,-1)
     
-    if (w=="smaller_s_bt" or w=="smaller_s_bb" or w=="smaller_s_bt"):
+    if (w==SMALLER_S_BT or w==SMALLER_S_BB or w==SMALLER_S_TT):
         #Since these events while going backwards have probability zero in the current model, return (-1,-1,-1,-1)
         return (-1,-1,-1,-1)
     
-    if (w=="kappa"):
+    if (w==KAPPA):
         if (x_1==1 and x_2==1):
             new_state= (q_t, r_t-1, -1, -1)
             #(q_t, r_t, x_1, x_2) --> (q_t, r_t-1, UNDEFINED, UNDEFINED)
@@ -494,7 +507,7 @@ def ApplyEvent(z,w,level):
             else:
                 return (-1,-1,-1,-1)
     
-    if(w=="m_1"):
+    if(w==M_1):
         if(x_1==1):
         #(q_t,r_t,x_1,x_2) --> (q_t,r_t,0,x_2)
             tuple = (q_t+1, r_t-1, 0, x_2)
@@ -506,7 +519,7 @@ def ApplyEvent(z,w,level):
             #x_1 must have state 1
             return (-1,-1,-1,-1)
         
-    if(w=="m_2"):
+    if(w==M_2):
         if(x_2==1):
             tuple = (q_t+1,r_t-1,x_1,0)
             if (IsValidState(tuple,level)==False):
@@ -517,14 +530,14 @@ def ApplyEvent(z,w,level):
             #x_2 must have state 1
             return (-1,-1,-1,-1)            
             
-    if(w=="smaller_s_b_arrow_t"):
+    if(w==SMALLER_S_B_ARROW_T):
         #IMPORTANT!!!!
-        #Here I take "smaller_s_b_arrow_t" to mean NOT "m_1" NOR "m_2, that is: 
-        #"m_1", "m_2" and "smaller_s_b_arrow_t" form an disjoint set!
+        #Here I take SMALLER_S_B_ARROW_T to mean NOT M_1 NOR M_2, that is: 
+        #M_1, M_2 and "smaller_s_b_arrow_t" form an disjoint set!
         #Only true for conditional probability. For uncondtional ones,
-        #m_1 and m_2 ARE s_b_arrow_t events. But for 
+        #M_1 and M_2 ARE s_b_arrow_t events. But for 
         #conditional cases, "s_b_arrow_t" really means those "s_b_arrow_t"
-        #events EXCLUDING "m_1" and "m_2". 
+        #events EXCLUDING M_1 and M_2. 
         
         tuple = (q_t+1,r_t-1,x_1,x_2)
         if (IsValidState(tuple,level)==False):
@@ -606,11 +619,11 @@ def GetLinearEquations(state_space_at_current_level,sigma, level):
     and P(k_ij | z) and P(w|z) are knowns
     
     Now, by our CONSTRUCTION (more like assumption), 
-    ("m_1", "m_2", "s_b_arrow_t") are DISJOINT SETS in 
+    (M_1, M_2, "s_b_arrow_t") are DISJOINT SETS in 
     conditional probability cases, we have, after rearranging terms:
      
     P(k_ij | z) = P(F|z) - sum_{w in M} P(w|z) * P(F|w(z)) for all z in Z_k
-                = P(F|z) - P("m_1"|z)*P(F|m_1(z)) - P("m_2"|z)*P(F|m_2(z))
+                = P(F|z) - P(M_1|z)*P(F|M_1(z)) - P(M_2|z)*P(F|M_2(z))
                     - P("s_b_arrow_t"|z)*P(F|"s_b_arrow_t"(z))
     
     There are 4(k-1) such z's, because w(z) WILL be inside
@@ -648,7 +661,7 @@ def GetLinearEquations(state_space_at_current_level,sigma, level):
     We call the LHS b, and the 5x5 matrix A, we would output (A, b)                             
     """ 
     length = len(state_space_at_current_level)
-    constant_vector = [UnconditionalTransitionProbability("kappa",z,sigma) for z in state_space_at_current_level]
+    constant_vector = [UnconditionalTransitionProbability(KAPPA,z,sigma) for z in state_space_at_current_level]
     #when level_number=2, 
     #we have state_space_at_current_level = [(2, 0, 0, 0), (1, 1, 0, 1), (0, 2, 1, 1), (1, 1, 1, 0)]
     #and constant_vector = [1.0, 0.00049975012493753122, 0.058823846204939162, 0.00049975012493753122]
@@ -658,12 +671,12 @@ def GetLinearEquations(state_space_at_current_level,sigma, level):
     #We really want the coefficients to be ints. 
     matrix = eye(length,length, dtype=float)
     
-    #Fill in the coefficient P("m_1"|z) into cell matrix[index of z][index of w(z)]
+    #Fill in the coefficient P(M_1|z) into cell matrix[index of z][index of w(z)]
 
     #First, create a Probability of w given Z vector
-    prob_m1_vector = [-UnconditionalTransitionProbability("m_1", z, sigma) for z in state_space_at_current_level]
-    prob_m2_vector = [-UnconditionalTransitionProbability("m_2", z, sigma) for z in state_space_at_current_level]
-    prob_s_b_arrow_t_vector = [-UnconditionalTransitionProbability("smaller_s_b_arrow_t", z, sigma) for z in state_space_at_current_level]
+    prob_m1_vector = [-UnconditionalTransitionProbability(M_1, z, sigma) for z in state_space_at_current_level]
+    prob_m2_vector = [-UnconditionalTransitionProbability(M_2, z, sigma) for z in state_space_at_current_level]
+    prob_s_b_arrow_t_vector = [-UnconditionalTransitionProbability(SMALLER_S_B_ARROW_T, z, sigma) for z in state_space_at_current_level]
     #print "prob_m1_vector is: " + str(prob_m1_vector)
     #print "prob_m2_vector is: " + str(prob_m2_vector)
     #print "prob_s_b_arrow_t_vector is: " + str(prob_s_b_arrow_t_vector)
@@ -675,9 +688,9 @@ def GetLinearEquations(state_space_at_current_level,sigma, level):
     #w_given_z_vector for the third element in state_space_at_current_level, 
     #or really state_space_at_current_level[2]
     
-    m1_vector = [ApplyEvent(z,"m_1",level) for z in state_space_at_current_level]
-    m2_vector = [ApplyEvent(z,"m_2",level) for z in state_space_at_current_level]
-    s_b_arrow_t_vector = [ApplyEvent(z,"smaller_s_b_arrow_t",level) for z in state_space_at_current_level]
+    m1_vector = [ApplyEvent(z,M_1,level) for z in state_space_at_current_level]
+    m2_vector = [ApplyEvent(z,M_2,level) for z in state_space_at_current_level]
+    s_b_arrow_t_vector = [ApplyEvent(z,SMALLER_S_B_ARROW_T,level) for z in state_space_at_current_level]
     #print m1_vector
     #print m2_vector
     #print s_b_arrow_t_vector
@@ -1190,7 +1203,7 @@ def UncondProbSBT(current_state_for_uncond_probs, sigma, num_sum=20):
     s_bt that is exclusive of kappa!
     """
     bt_global = UncondProbSBTGlobal(current_state_for_uncond_probs, sigma, num_sum=20)
-    kappa = UncondProbKappa("s_bt", current_state_for_uncond_probs, sigma, num_sum)
+    kappa = UncondProbKappa(S_BT, current_state_for_uncond_probs, sigma, num_sum)
     return bt_global - kappa
         
 def UncondProbSBarrowT(current_state_for_uncond_probs, sigma, num_sum=20):
@@ -1336,9 +1349,9 @@ def UncondProbM2(current_state_for_uncond_probs, sigma,num_sum=20):
 def ReinterpretUncondEvent(event, z):
     """
     To calculate unconditional probabilities (not based on
-    each coealescing lineages' present states), "m_1" and "m_2" are 
+    each coealescing lineages' present states), M_1 and M_2 are 
     treated as "s_b_arrow_t", and "kappa" is treated as 
-    either "s_bb", "s_tt", or "s_bt".
+    either "s_bb", "s_tt", or S_BT.
     
     This method "reinterprets" the event for unconditional probabilities. 
         
@@ -1347,8 +1360,8 @@ def ReinterpretUncondEvent(event, z):
     event        An event operator, UnconditionalTransitionProbability and
                  MaketransitionMatrixForLevel for more details. 
                  An event could be either one of the following:
-                 "m_1", "m_2", "s_b_arrow_t", "kappa", "s_bb", "s_tt",
-                 or "s_bt"
+                 M_1, M_2, "s_b_arrow_t", KAPPA, "s_bb", "s_tt",
+                 or S_BT
                  
     z            a 4-tuple (q_t, r_t, x_1, x_2)
     
@@ -1360,19 +1373,20 @@ def ReinterpretUncondEvent(event, z):
                                      next-coalescing lineages is (0, 0)
                                 (b) 's_tt' if the state of the two
                                      next-coalescing lineages is (1, 1).
-                                (c) 's_bt' is the state of the
+                                (c) S_BT is the state of the
                                      next-coalescing lineages is (1, 0) or
                                      (0, 1)
     For instance, if event kappa operates on z=(5,2,1,0), then
-    this must be a "s_bt" speciation event. 
+    this must be a S_BT speciation event. 
                                      
     Return value
     ------------
-    A string as "s_bb", "s_tt", "s_bt", or "s_b_arrow_t", "m_1",or "m_2"
+    A string (which is a constant in this program)
+    as "s_bb", "s_tt", S_BT, or "s_b_arrow_t", M_1,or M_2
     """
     if (event=="kappa"):
         (x_1,x_2) = z[2:4]
-        map = {(0,0):"s_bb", (1,1):"s_tt", (1,0):"s_bt", (0,1):"s_bt"}
+        map = {(0,0):"s_bb", (1,1):"s_tt", (1,0):S_BT, (0,1):S_BT}
         return map[(x_1,x_2)]
     
     return event;
@@ -1386,7 +1400,7 @@ def UncondProbKappa(event, current_state_for_uncond_probs, sigma, num_sum=20):
     r_t = current_state_for_uncond_probs[1]
     x_1 = current_state_for_uncond_probs[2]
     x_2 = current_state_for_uncond_probs[3]
-    if (event=="s_bt"):
+    if (event==S_BT):
         if((x_1==0 and x_2==1) or (x_1==1 and x_2==0)):
             temp = UncondProbSBTGlobal(current_state_for_uncond_probs, sigma, num_sum)
             if (q_t!=0 and r_t!=0):
@@ -1440,11 +1454,11 @@ def UnconditionalTransitionProbability(event, current_state_of_cond_jump_chain, 
                             next-coalescing lineages. 
                 
                 's_bb'      speciation events not involving both the
-                's_bt'      next-coalescing lineages (see Section 3, bullet
+                S_BT      next-coalescing lineages (see Section 3, bullet
                 's_tt'      point entitled "Events", and also Figure 1 on page 6
 
-                'm_1'       migration events involving the first and the
-                'm_2'       second of the next-coalescing lineages
+                M_1       migration events involving the first and the
+                M_2       second of the next-coalescing lineages
                             respectively.
                 
                 's_b_arrow_t'   any other migration event. The model in
@@ -1480,11 +1494,11 @@ def UnconditionalTransitionProbability(event, current_state_of_cond_jump_chain, 
                                      next-coalescing lineages is (1, 1).
                                 (b) 's_bb' if the state of the
                                      next-coalescing lineages is (0, 0)
-                                (c) 's_bt' is the state of the
+                                (c) S_BT is the state of the
                                      next-coalescing lineages is (1, 0) or
                                      (0, 1)
     
-    events 'm_1','m_2', and 's_b_arrow_t' are not treated as disjoint
+    events M_1, M_2, and 's_b_arrow_t' are not treated as disjoint
     """
 
     # current state that's relevent for the computation of unconditional
@@ -1495,22 +1509,22 @@ def UnconditionalTransitionProbability(event, current_state_of_cond_jump_chain, 
     event = ReinterpretUncondEvent(event, current_state_of_cond_jump_chain)
  
     # In python the set() statement makes a set from a list.
-    set_of_events = set(['s_bb', 's_tt', 's_bt', 'm_1','m_2','smaller_s_b_arrow_t'])
+    set_of_events = set(['s_bb', 's_tt', S_BT, M_1,M_2,SMALLER_S_B_ARROW_T])
 
     # UncondProbSTT implements Equation 13.
     # UncondProbSBB implements Equation 17.
     # UncondProbSBarrowT implements Equation 21.
     # UncondProbSBT implements Equation 22.
     #I create two maps, the numerator map maps event to its "instantaneous",
-    #rates, such as kappa, m_1, and smaller_s_b_arrow_t. The denominator
+    #rates, such as KAPPA, M_1, and SMALLER_S_B_ARROW_T. The denominator
     #map maps s_tt to s_tt, s_bb to s_bb, etc. But
-    #since m_1+m_2+smaller_s_b_arrow_t = s_b_arrow_t_global,  
+    #since M_1+M_2+SMALLER_S_B_ARROW_T = s_b_arrow_t_global,  
     #and also m_1 and m_2 exist in set_of_events, I keep them
     #in the denominator map. 
-    numerator_event_to_function = {'s_tt': UncondProbKappa, 's_bb': UncondProbKappa, 'smaller_s_b_arrow_t': UncondProbSBarrowT, 's_bt': UncondProbKappa, 'm_1':UncondProbM1, 'm_2':UncondProbM2}
+    numerator_event_to_function = {'s_tt': UncondProbKappa, 's_bb': UncondProbKappa, SMALLER_S_B_ARROW_T: UncondProbSBarrowT, S_BT: UncondProbKappa, M_1:UncondProbM1, M_2:UncondProbM2}
     
-    denominator_event_to_function = {'s_tt': UncondProbSTTGlobal, 's_bb': UncondProbSBBGlobal, 'smaller_s_b_arrow_t': UncondProbSBarrowT, 's_bt': UncondProbSBTGlobal, 'm_1':UncondProbM1, 'm_2':UncondProbM2}
-    # e loops over events in set(['s_tt', 's_bb',  's_bt', 'm_1', 'm_2','smaller_s_b_arrow_t'])
+    denominator_event_to_function = {'s_tt': UncondProbSTTGlobal, 's_bb': UncondProbSBBGlobal, SMALLER_S_B_ARROW_T: UncondProbSBarrowT, S_BT: UncondProbSBTGlobal, M_1:UncondProbM1, M_2:UncondProbM2}
+    # e loops over events in set(['s_tt', 's_bb',  S_BT, M_1, M_2,SMALLER_S_B_ARROW_T])
     # we will also need the sum of all rates, for calculating the
     # probabilities from rates (basically, the sum is the denominator is
     # Eq. 23).
@@ -1523,10 +1537,10 @@ def UnconditionalTransitionProbability(event, current_state_of_cond_jump_chain, 
         #We then divide the methods in the map into if/else based
         #on their two different parameters
         if (event==e):
-            if(e=="s_bt" or e=="s_bb" or e=="s_tt"):
+            if(e==S_BT or e=="s_bb" or e=="s_tt"):
                 numerator = numerator_event_to_function[e](event, current_state_of_cond_jump_chain, sigma, num_sum=20)
             else:
-                #Must be m_1, m_2, or s_b_arrow_t
+                #Must be M_1, M_2, or s_b_arrow_t
                 numerator = numerator_event_to_function[e](current_state_of_cond_jump_chain, sigma, num_sum=20)
         #All methods in the denominator map have the same parameters
         sum_of_rates += denominator_event_to_function[e](current_state_of_cond_jump_chain, sigma, num_sum=20)
@@ -2022,17 +2036,17 @@ def WhetherInTheSameLevel(state1, state2):
 def MigrationType(z1, z2):
     """
     Identify migration type from z1 to z2. Return whether it's
-    "m_1", "m_2', or "smaller_s_b_arrow_t"
+    M_1, M_2, or SMALLER_S_B_ARROW_T
     
     Precondition: Assumes z1 and z2 are in same level. 
     """
     ret = ""
     if (z1[2]==z2[2] and z1[3]==z2[3]):
-        ret = "smaller_s_b_arrow_t"
+        ret = SMALLER_S_B_ARROW_T
     if (z1[2]==z2[2] and z1[3]!=z2[3]):
-        ret = "m_2"
+        ret = M_2
     if (z1[2]!=z2[2] and z1[3]==z2[3]):
-        ret = "m_1"
+        ret = M_1
     return ret
 
 def ChooseLineageandUpdateDelta(G, level_number, migration_type, current_delta, all_delta_earlier):
@@ -2049,12 +2063,12 @@ def ChooseLineageandUpdateDelta(G, level_number, migration_type, current_delta, 
 
     
     Update all_delta based on migration_type, which could 
-    be "m_1", "m_2", "smaller_s_b_arrow_t". Also return which lineage
+    be M_1, M_2, SMALLER_S_B_ARROW_T. Also return which lineage
     to migrate. 
     
     Need to know also the next-coalescing lineages. 
     Say level is at 5, and next-coalescing lineages are in species 3 and 4
-    So say delta=[1,1,0,1,1] and migration_type is "m_2", then 
+    So say delta=[1,1,0,1,1] and migration_type is M_2, then 
     this method should change delta to [1,1,0,1,0], and return 4, since 
     4th lineage is the lineage to migrate.
 
@@ -2071,20 +2085,20 @@ def ChooseLineageandUpdateDelta(G, level_number, migration_type, current_delta, 
     next_coalescing_lineages = G.levels[G.num_leaves - level_number].end_node.children
     lineage1=-1
     lineage2=-1
-    if (migration_type =="m_1"):
+    if (migration_type ==M_1):
         lineage1 = next_coalescing_lineages[0].index
         #migration always goes from 1 --> 0 backwards in time
         assert(current_delta[lineage1]==1)
         current_delta[lineage1] = 0
         all_delta_earlier[lineage1] = 0
         return (lineage1,current_delta,all_delta_earlier)
-    if (migration_type=="m_2"):
+    if (migration_type==M_2):
         lineage2 = next_coalescing_lineages[1].index
         assert(current_delta[lineage2]==1)
         current_delta[lineage2] = 0
         all_delta_earlier[lineage2] = 0
         return (lineage2,current_delta,all_delta_earlier)
-    if (migration_type=="smaller_s_b_arrow_t"):
+    if (migration_type==SMALLER_S_B_ARROW_T):
         #need to randomly pick lineages whose deltas==1 to migrate, EXCLUDING
         #those involving next_coalescing_lineages. 
         #So first delete next_coalescing_lineages from consideration and those lineages
@@ -2096,7 +2110,7 @@ def ChooseLineageandUpdateDelta(G, level_number, migration_type, current_delta, 
                 random_list.append(i)
         #so in our example, newlist becomes [0,1] b/c besides
         #the next_coalescing_lineages 3 and 4, lineages 0 and 1 would
-        #fall into "smaller_s_b_arrow_t"
+        #fall into SMALLER_S_B_ARROW_T
         #We now "randomly shuffle" it and select the first element, that's
         #where we want to migrate to
         #print "before shuffling: " + str(random_list)
@@ -2745,8 +2759,9 @@ def PrepareTree():
     
 if __name__ == "__main__":
     G = PrepareTree()
+    print G.all_leaves
     level_number = 4
-    migration_type = "m_2"
+    migration_type = M_2
     current_delta = [1,1,0,1]
     all_delta_earlier = [1,1,0,1]
     lineage = ChooseLineageandUpdateDelta(G, level_number, migration_type, current_delta, all_delta_earlier)
@@ -2762,4 +2777,3 @@ if __name__ == "__main__":
     next_level = G.levels[1]
     x = 3
     print "nice" , x ,"nice"
-    GetCondJumpChainStateSpace();
