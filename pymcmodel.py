@@ -87,6 +87,7 @@ def MetropolisHastings(delta, runs, a):
         if(u<hastingsRatio):
             sigma=sigmaStar;
         #print(i)
+        print("random "+str(u));
         print(sigma);
         for j in range(len(sigma)):
             sigmas[i][j]=sigma[j];
