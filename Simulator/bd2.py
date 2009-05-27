@@ -127,10 +127,11 @@ def CreatePopulation(birth_0, death_0, birth_1, death_1, migration_0, migration_
     time=0;
     while(all_related==False):
         j=j+1;
+        print j;
         #print(nodes);
         total_0=len(in_0);
         total_1=len(in_1);
-        total_events=birth_0+birth_1+death_0+death_1+migration_0+migration_1;
+        total_events=birth_0*total_0+birth_1*total_1+death_0*total_0+death_1*total_1+migration_0*total_1+migration_1*total_0;
         time_till_event=random.gammavariate(1,total_events);
         time=time+time_till_event;
         #time=time+dt;
@@ -175,7 +176,7 @@ def CreatePopulation(birth_0, death_0, birth_1, death_1, migration_0, migration_
             random_list[i]=all_lineages_alive_copy.pop();
         random.shuffle(random_list);
         random_index_all=random_list[0];
-        #row_for_choosing 0:birth_0, 1:death_0, 2:birth_1, 3:death_1, 4:migration_0, 5:migration_1    
+        #row_for_choosing 0:birth_0, 1:death_0, 2:migration_0, 3:birth_1, 4:death_1, 5:migration_1    
         row_for_choosing=range(6);
         #special case
         if(len(in_0)==0):
@@ -184,9 +185,9 @@ def CreatePopulation(birth_0, death_0, birth_1, death_1, migration_0, migration_
             row_for_choosing[2]=0;
         #normal
         else:
-            row_for_choosing[0]=birth_0;
-            row_for_choosing[1]=row_for_choosing[0]+death_0;
-            row_for_choosing[2]=row_for_choosing[1]+migration_0;
+            row_for_choosing[0]=birth_0*total_0;
+            row_for_choosing[1]=row_for_choosing[0]+death_0*total_0;
+            row_for_choosing[2]=row_for_choosing[1]+migration_0*total_1;
         #special case
         if(len(in_1)==0):
             row_for_choosing[3]=0+row_for_choosing[0];
@@ -194,30 +195,30 @@ def CreatePopulation(birth_0, death_0, birth_1, death_1, migration_0, migration_
             row_for_choosing[5]=0+row_for_choosing[0];
         #normal
         else:
-            row_for_choosing[3]=row_for_choosing[2]+birth_1;
-            row_for_choosing[4]=row_for_choosing[3]+death_1;
-            row_for_choosing[5]=row_for_choosing[4]+migration_1;
+            row_for_choosing[3]=row_for_choosing[2]+birth_1*total_1;
+            row_for_choosing[4]=row_for_choosing[3]+death_1*total_1;
+            row_for_choosing[5]=row_for_choosing[4]+migration_1*total_0;
 
         #normalize
         sum=0;
         for i in range(len(row_for_choosing)):
             sum=sum+row_for_choosing[i];
         #print("not normalized "+str(row_for_choosing));
-        print("normalizing constant "+str(row_for_choosing[len(row_for_choosing)-1]));
+        #print("normalizing constant "+str(row_for_choosing[len(row_for_choosing)-1]));
         for i in range(len(row_for_choosing)):
             row_for_choosing[i]=row_for_choosing[i]/row_for_choosing[len(row_for_choosing)-1];
         #print(row_for_choosing[len(row_for_choosing)-1]);
         #print(row_for_choosing);       
         event_number=GetEvent(row_for_choosing);
-        print "event number "+str(event_number);    
-        print("in_1")
-        print(in_1)
-        print("in_1_alive")
-        print(in_1_alive)
-        print("in_0")
-        print(in_0)
-        print("in_0_alive")
-        print(in_0_alive)
+        #print "event number "+str(event_number);    
+        #print("in_1")
+        #print(in_1)
+        #print("in_1_alive")
+        #print(in_1_alive)
+        #print("in_0")
+        #print(in_0)
+        #print("in_0_alive")
+        #print(in_0_alive)
         
         if(event_number==0):#birth 0
             #print "birth 0";
@@ -292,7 +293,7 @@ def CreatePopulation(birth_0, death_0, birth_1, death_1, migration_0, migration_
             if(len(common_rel)==0):
                 all_related=False;
         #print("j "+str(j));
-        if j==10000:
+        if j==2000:
             all_related=True;
             print("forced quit");
         
@@ -309,7 +310,7 @@ def GetEvent(row_for_choosing):
 
     """
     n=random.uniform(0,1);
-    print(str(n)+"random")
+    #print(str(n)+"random")
     for i in range(len(row_for_choosing)):
         if(i==0):
             if(0<=n<row_for_choosing[i]):
