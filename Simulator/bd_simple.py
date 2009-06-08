@@ -17,8 +17,12 @@ import random
 # state to which the lineage migrated.
 # Assume there is at first one lineage, lineage 0.
 
-def Migration(y,time,nodes, direction, in_0, in_0_alive):
+def Migration(y,time,nodes, direction, in_0, in_1, in_0_alive, in_1_alive):
     """
+
+    In this simpler case, the migration always occurs from state 0 to state 1 with a birth being forced in
+    state 0 to keep the population in state 0 constant.
+                
     Input Paramters
     ---------------
     y           the index of the node migrating
@@ -34,43 +38,57 @@ def Migration(y,time,nodes, direction, in_0, in_0_alive):
     nodes[y][2]=direction;
     times=nodes[y][3];
     times.append([time,direction]);
-
-#now force a birth in region 0 since there must be a constant population there    
-##    random_list=range(len(in_0_alive));
-##    random.shuffle(random_list);
-##    random_index_0=random_list[0];
-##    index_to_birth=in_0_alive[random_index_0];
-    #index_to_birth=in_0_alive.pop();
-    index_to_birth=y;
+    in_0.remove(y);
     in_0_alive.remove(y);
-    #print("in migration, random index in 0 to birth "+str(index_to_birth));
-    #(nodes, new_index_1, new_index_2)=Birth(index_to_birth,time,nodes);
-    ##############################################
-##    related_to=nodes[y][5];
-##    new_index_1=len(nodes)
-##    new_related_to=related_to.copy()
-##    new_related_to.add(y)
-##    new_lineage_1=[time,y,nodes[y][2],[], -1, new_related_to]
-##    nodes.update({new_index_1:new_lineage_1})
-
-    old_lineage= nodes[y];
+    in_1.update([y]);
+    in_1_alive.update([y]);
+    #now force a birth in region 0 since there must be a constant population there
+##    print "in_0_alive "+str(in_0_alive);
+    in_0_alive_copy=in_0_alive.copy();
+    random_list=range(len(in_0_alive));
+    for i in range(len(in_0_alive)):
+        random_list[i]=in_0_alive_copy.pop();
+    random.shuffle(random_list);
+##    print random_list
+    if len(random_list)==0:
+        random_index_0=-1;
+    else:            
+        random_index_0=random_list[0];
+    index_to_birth=random_index_0;
+##  print("in migration, random index in 0 to birth "+str(index_to_birth));
+##  (nodes, new_index_1, new_index_2)=Birth(index_to_birth,time,nodes);
+    #peform operations so that the lineage giving birth dies and update that information in nodes
+    old_lineage= nodes[index_to_birth];
     old_lineage[4]=time;
-    nodes.update({y:old_lineage});
+    nodes.update({index_to_birth:old_lineage});
+    in_0_alive.remove(index_to_birth);
+##    print "because migration, death "+str(index_to_birth);
+    ############################################## birth
+    related_to=nodes[index_to_birth][5];
+    new_index_1=len(nodes)
+    new_related_to=related_to.copy()
+    new_related_to.add(index_to_birth)
+    new_lineage_1=[time,index_to_birth,nodes[index_to_birth][2],[], -1, new_related_to]
+    nodes.update({new_index_1:new_lineage_1})
+    in_0.update([new_index_1]);
+    in_0_alive.update([new_index_1]);
 
-    related_to=nodes[y][5];
+    related_to=nodes[index_to_birth][5];
     new_index_2=len(nodes);
     new_related_to=related_to.copy();
-    new_related_to.add(y)
-    new_lineage_2=[time,y,nodes[y][2],[], -1, new_related_to]
+    new_related_to.add(index_to_birth)
+    new_lineage_2=[time,index_to_birth,nodes[index_to_birth][2],[], -1, new_related_to]
     nodes.update({new_index_2:new_lineage_2})
-    ##############################################    
-    in_0.update([ new_index_2]);
+    in_0.update([new_index_2]);
     in_0_alive.update([new_index_2]);
-    #in_0_alive.remove(index_to_birth);
+    ##############################################    
+##    print "because migration, birth "+str(new_index_1);
+##    print "because migration, birth "+str(new_index_2);
+##    print "in region "+str(nodes[index_to_birth][2]);
    
-    return(nodes, in_0, in_0_alive)
+    return(nodes, in_0, in_1, in_0_alive, in_1_alive)
 
-def Birth(y, time, nodes):
+def Birth(y, time, nodes, in_0, in_1, in_0_alive, in_1_alive):
     """
     Input Parameters
     ----------------
@@ -83,9 +101,9 @@ def Birth(y, time, nodes):
     --------------
     updated nodes
     the new index
+    
     """
-    #len(nodes) will be the index of the new node, ie. the right child of y, the node giving birth
-    #the region of the new node will have to be the same as the region of the parent node
+    #len(nodes) and len(nodes)+1 will be the indices of the new lineages
     related_to=nodes[y][5];
     new_index_1=len(nodes)
     new_related_to=related_to.copy()
@@ -93,16 +111,30 @@ def Birth(y, time, nodes):
     new_lineage_1=[time,y,nodes[y][2],[], -1, new_related_to]
     nodes.update({new_index_1:new_lineage_1})
 
-    old_lineage= nodes[y];
-    old_lineage[4]=time;
-    nodes.update({y:old_lineage});
-
     new_index_2=len(nodes);    
     new_lineage_2=[time,y,nodes[y][2],[], -1, new_related_to]
     nodes.update({new_index_2:new_lineage_2})
-    return (nodes, new_index_1, new_index_2)
 
-def Death(y,time,nodes):
+    #the node giving birth dies
+    old_lineage= nodes[y];
+    old_lineage[4]=time;
+    nodes.update({y:old_lineage});
+    if(nodes[y][2]==0):
+        in_0_alive.remove(y);
+        in_0.add(new_index_1);
+        in_0.add(new_index_2);
+        in_0_alive.add(new_index_1);
+        in_0_alive.add(new_index_2);
+    else:
+        in_1_alive.remove(y);
+        in_1.add(new_index_1);
+        in_1.add(new_index_2);
+        in_1_alive.add(new_index_1);
+        in_1_alive.add(new_index_2);
+    
+    return (nodes, new_index_1, new_index_2, in_0, in_1, in_0_alive, in_1_alive)
+
+def Death(y,time,nodes, in_0_alive, in_1_alive):
     """
     Input Parameters
     ----------------
@@ -115,8 +147,12 @@ def Death(y,time,nodes):
     updated nodes
     """
     nodes[y][4]=time;
+    if(nodes[y][2]==0):
+        in_0_alive.remove(y);
+    else:
+        in_1_alive.remove(y);
         
-    return nodes
+    return (nodes, in_0_alive, in_1_alive)
 
 def CreatePopulation(birth_0, death_0, turnover, birth_1, death_1, migration_0, migration_1, initial_0, initial_1):
     """
@@ -244,14 +280,14 @@ def CreatePopulation(birth_0, death_0, turnover, birth_1, death_1, migration_0, 
         sum=0;
         for i in range(len(row_for_choosing)):
             sum=sum+row_for_choosing[i];
-        #print("not normalized "+str(row_for_choosing));
-        #print("normalizing constant "+str(row_for_choosing[len(row_for_choosing)-1]));
+##        print("not normalized "+str(row_for_choosing));
+##        print("normalizing constant "+str(row_for_choosing[len(row_for_choosing)-1]));
         for i in range(len(row_for_choosing)):
             row_for_choosing[i]=row_for_choosing[i]/row_for_choosing[len(row_for_choosing)-1];
-        #print(row_for_choosing[len(row_for_choosing)-1]);
-        #print(row_for_choosing);       
+##        print(row_for_choosing[len(row_for_choosing)-1]);
+##        print(row_for_choosing);       
         event_number=GetEvent(row_for_choosing);
-        #print "event number "+str(event_number);    
+##      print "event number "+str(event_number);    
 ##        print("in_1")
 ##        print(in_1)
 ##        print("in_1_alive")
@@ -260,41 +296,38 @@ def CreatePopulation(birth_0, death_0, turnover, birth_1, death_1, migration_0, 
 ##        print(in_0)
 ##        print("in_0_alive")
 ##        print(in_0_alive)
-        
         if(event_number==0):#birth 0
-            #print "birth 0";
             index_to_birth=random_index_0;
+##            print "node "+str(index_to_birth)+" birth 0";
+##            print "nodes state is "+str(nodes[index_to_birth][2]);
             if(not index_to_birth==-1): #there are still lineages in 0 alive
-                (nodes, new_index_1, new_index_2)=Birth(index_to_birth,time,nodes);
-                in_0.update([new_index_1, new_index_2]);
-                in_0_alive.update([new_index_1, new_index_2]);
-                in_0_alive.remove(index_to_birth);
+                (nodes, new_index_1, new_index_2, in_0, in_1, in_0_alive, in_1_alive)=Birth(index_to_birth,time,nodes,
+                                                                                in_0, in_1, in_0_alive, in_1_alive);
         if(event_number==1):#death 0
-            #print "death 0";
+##            print "death 0";
             index_to_die=random_index_0;
+##            print "node "+str(index_to_die)+" death 0";
             if(not index_to_die==-1):
-                nodes=Death(index_to_die,time,nodes);
-                ##experiment
+                (nodes, in_0_alive, in_1_alive)=Death(index_to_die,time,nodes, in_0_alive, in_1_alive);
+                #do this next if statement to aid in the pruning process
                 if(len(nodes[index_to_die][5])==0):#the dying node has no children
                     in_0.remove(index_to_die);
-                in_0_alive.remove(index_to_die);
         if(event_number==4):#birth 1
-            #print "birth 1";
             index_to_birth=random_index_1;
+##            print "node "+str(index_to_birth)+" birth 1";
             if(not index_to_birth==-1): #there are still lineages in 1 alive
-                (nodes, new_index_1, new_index_2)=Birth(index_to_birth,time,nodes);
-                in_1.update([new_index_1, new_index_2]);
-                in_1_alive.update([new_index_1, new_index_2]);
-                in_1_alive.remove(index_to_birth);
+                (nodes, new_index_1, new_index_2, in_0, in_1, in_0_alive, in_1_alive)=Birth(index_to_birth,time,nodes,
+                                                                                in_0, in_1, in_0_alive, in_1_alive);
         if(event_number==5):#death 1
-            #print "death 1";
+##            print "death 1";
             index_to_die=random_index_1;
+##            print "node "+str(index_to_die)+" death 1";
             if(not index_to_die==-1):
-                nodes=Death(index_to_die,time,nodes);
-                ##experiment
-                if(len(nodes[index_to_die][5])==0):#the dying node has no children
-                    in_1.remove(index_to_die);
-                in_1_alive.remove(index_to_die);
+                 (nodes, in_0_alive, in_1_alive)=Death(index_to_die,time,nodes, in_0_alive, in_1_alive);
+                #do this next if statement to aid in the pruning process
+                 if(len(nodes[index_to_die][5])==0):#the dying node has no children
+                     in_1.remove(index_to_die);
+                    
 ##        if(event_number==2):#migration 0
 ##            #print "migration 0";
 ##            index_to_migrate=random_index_all;
@@ -305,23 +338,20 @@ def CreatePopulation(birth_0, death_0, turnover, birth_1, death_1, migration_0, 
 ##                in_1_alive.remove(index_to_migrate);
 ##                in_0_alive.update([index_to_migrate]);
         if(event_number==6):#migration 1
-            #print "migration 1";
-            #index_to_migrate=random_index_all;
+##            print "migration 1";
             index_to_migrate=random_index_0;
-            (nodes, in_0, in_0_alive)=Migration(index_to_migrate,time,nodes,1, in_0, in_0_alive)
-            if len(in_0.intersection(set([index_to_migrate])))!=0:
-                in_0.remove(index_to_migrate);
-                in_1.update([index_to_migrate]);
-#                in_0_alive.remove(index_to_migrate);
-                in_1_alive.update([index_to_migrate]);
+##            print "node "+str(index_to_migrate)+" migrate 1";
+##            print "node "+str(index_to_migrate)+" state "+str(nodes[index_to_migrate][2]);
+            (nodes, in_0, in_1, in_0_alive, in_1_alive)=Migration(index_to_migrate,time,nodes, 1, in_0,
+                                                                  in_1, in_0_alive, in_1_alive)
 
         if(event_number==3):#turnover
-            #print("turnover");
             index_to_turnover=random_index_0;
-            nodes=Death(index_to_turnover,time,nodes);
-            in_0_alive.remove(index_to_turnover);
+##            print "node "+str(index_to_turnover)+"turnover";
+            #first force a death in state 0
+            (nodes, in_0_alive, in_1_alive)=Death(index_to_turnover,time,nodes, in_0_alive, in_1_alive);
 
-            #print("in 0 alive "+str(in_0_alive));
+            #now force a birth in state 0 (the index giving birth in state 0 will also die)            
             random_list=range(len(in_0_alive));
             in_0_alive_copy=in_0_alive.copy();
             for i in range(len(in_0_alive)):
@@ -334,10 +364,8 @@ def CreatePopulation(birth_0, death_0, turnover, birth_1, death_1, migration_0, 
 
             index_to_birth=random_index_0;            
             if(not index_to_birth==-1): #there are still lineages in 0 alive
-                (nodes, new_index_1, new_index_2)=Birth(index_to_birth,time,nodes);
-                in_0.update([new_index_1, new_index_2]);
-                in_0_alive.update([new_index_1, new_index_2]);
-                in_0_alive.remove(index_to_birth);
+                (nodes, new_index_1, new_index_2, in_0, in_1, in_0_alive, in_1_alive)=Birth(index_to_birth,time,nodes,
+                                                                                in_0, in_1, in_0_alive, in_1_alive);
                 
         #print("nodes");
         #print(nodes);
@@ -363,13 +391,13 @@ def CreatePopulation(birth_0, death_0, turnover, birth_1, death_1, migration_0, 
         if j==1000:
             all_related=True;
             print("forced quit");
-            print("in_0_alive ")
-            print(in_0_alive);
-            print "in_1_alive";
-            print(in_1_alive);
+##            print("in_0_alive ")
+##            print(in_0_alive);
+##            print "in_1_alive";
+##            print(in_1_alive);
         
     #return [nodes, final_0, final_1]
-    return [nodes, in_0, in_1, in_0_alive, in_1_alive, common_rel]    
+    return [nodes, in_0, in_1, in_0_alive, in_1_alive, common_rel, time]    
 
 def GetEvent(row_for_choosing):
     """
@@ -424,9 +452,9 @@ def Simulate(birth_0, death_0, turnover, birth_1, death_1, migration_1, migratio
     #not known, so it will be best to at first have the birth rate only slightly smaller than the death rate,
     #and have run equal to one.
     for i in range(0,runs):
-        [nodes, in_0, in_1, in_0_alive, in_1_alive, common_rel] =CreatePopulation(birth_0, death_0, turnover, birth_1, death_1, migration_1, migration_0, intitial_0, initial_1)
+        [nodes, in_0, in_1, in_0_alive, in_1_alive, common_rel, time] =CreatePopulation(birth_0, death_0, turnover, birth_1, death_1, migration_1, migration_0, intitial_0, initial_1)
         #common_rel=CreatePopulation(birth_0, death_0, birth_1, death_1, migration_1, migration_0, dt, intitial_0, initial_1)
-    return [nodes, in_0, in_1, in_0_alive, in_1_alive, common_rel] 
+    return [nodes, in_0, in_1, in_0_alive, in_1_alive, common_rel, time] 
 
 def GetCounts(nodes_real):
     counts=range(len(nodes_real));
@@ -445,7 +473,7 @@ def GetCounts(nodes_real):
                 counts[index]=counts[index]+1;  
     return counts
 
-def PrintNodes(nodes, common_rel, in_0, in_1, in_0_alive, in_1_alive, total_begin):
+def PrintNodes(time, nodes, common_rel, in_0, in_1, in_0_alive, in_1_alive, total_begin):
     """
     Input:
     ------
@@ -456,28 +484,83 @@ def PrintNodes(nodes, common_rel, in_0, in_1, in_0_alive, in_1_alive, total_begi
 
     Output:
     ------
-    lineages_map:
+    childtoparent_map:
                 child: parent lineage, a map of each child lineage to its parent lineage
+
+    Note: I am making the last lineages an arbitrary length. Note that leaf nodes are all alive in the present time.
+
+    Note:
+     2     3    
+      \   /          
+       \ /            
+        *              
+        |              
+        |              
+        1              
+        |              
+        |              
+        0              
+      first          
+
+USERTYPE first (CSTREE) = (((2,3))1)0;
+
+is how nexus trees should be represented according to http://wiki.christophchamp.com/index.php/NEXUS_file_format
+but in order for my tree to be compatible with R, the first tree is represented as ((2,3)0 and this representation means
+
+    Note:
+     2     3    
+      \   /          
+       \ /            
+        *              
+        |              
+        |                                       
+        |              
+        0              
+      first 
     """
     #common=common_rel.copy();
     #common_rel=common.pop();
-    lineages_map={};
+    childtoparent_map={};
     #iterate through all nodes and assign them to a parent
     for child in range(len(nodes)):
         parent_lineage=nodes[child][1];
-        lineages_map.update({child:parent_lineage});
+        childtoparent_map.update({child:parent_lineage});
  
     all_alive=in_0_alive.union(in_1_alive)
-    (intermediate_map, final_map)=Prune(lineages_map, nodes, all_alive);
+    (intermediate_map, final_map)=Prune(childtoparent_map, nodes, all_alive);
 
-    return [lineages_map, intermediate_map, final_map]            
+    root_node=-1;
+    final_map_copy=Make_copy(final_map)
+    current_node=final_map_copy[root_node].pop();
+    nexus_string="";
+    final_map_copy=Make_copy(final_map);
+    nexus_string =GetString(time, 0, current_node, final_map, final_map_copy, nodes);       
 
-def Prune(lineages_map, nodes, all_alive):
+    return [nexus_string, childtoparent_map, intermediate_map, final_map]            
+
+def GetString(time, last_time, current_node, final_map, final_map_copy, nodes):
+    final_map_copy_2=Make_copy(final_map);
+    real_time=nodes[current_node][0]
+    nexus_string="";
+    state=nodes[current_node][2];
+    if(final_map_copy.has_key(current_node)):
+        #final_map_copy[current_node] gives a set of the children of the current node
+        #nodes[final_map_copy[current_node].pop()][0] gives the birth time of the children of the current node
+        next_birth_time=nodes[final_map_copy[current_node].pop()][0];
+        length=next_birth_time-real_time;
+        nexus_string="("+GetString(time, real_time, final_map_copy_2[current_node].pop(), final_map, final_map_copy, nodes)+","+GetString(time, real_time, final_map_copy_2[current_node].pop(), final_map, final_map_copy, nodes)+")"+str(current_node)+"#"+str(state)+":"+str(length);
+    else:
+        #make the last lineages an arbitrary length of 1
+        arbitrary_length=time-nodes[current_node][0]+1;
+        nexus_string=str(current_node)+"#"+str(state)+":"+str(arbitrary_length);
+    return nexus_string   
+
+def Prune(childtoparent_map, nodes, all_alive):
     """
     Input
     ------
 
-    lineages_map        "child: parent lineage", a map of each child lineage to its parent lineage
+    childtoparent_map        "child: parent lineage", a map of each child lineage to its parent lineage
     nodes               a map of lineages and all the info that goes with them, see other functions for description
     all_alive           the lineages that are leaf nodes i.e. still alive
 
@@ -492,7 +575,7 @@ def Prune(lineages_map, nodes, all_alive):
     while(len(all_alive_copy)>0):
         lineage=all_alive_copy.pop();
         child=lineage;
-        parent=lineages_map[child]
+        parent=childtoparent_map[child]
         reached_beginning='False';
         while(reached_beginning=='False'):
             if(final_map.has_key(parent)):
@@ -505,37 +588,50 @@ def Prune(lineages_map, nodes, all_alive):
                 reached_beginning='True';
             else:
                 child=parent;
-                parent=lineages_map[child];
+                parent=childtoparent_map[child];
     intermediate_map= Make_copy(final_map);
-    final_map_copy= Make_copy(final_map);
 ##now prune even more
     parents_keys=intermediate_map.keys(); #parents_keys is a list
     #parents_keys=final_map.keys(); #parents_keys is a list
     for parent in parents_keys:
-        if(len(final_map[parent])==1): #final_map[parent] gives set(children)
-            child=final_map_copy[parent].pop();
-            done='False'
-            if(parent==-1):
-                done='True';
-            while(done=='False'):
-                #remove the immediate parent and move back in time along the tree to parent of the immediate parent
-                #call this parent of the immediate parent, new_parent. 
-                new_parent=lineages_map[parent];
-                del lineages_map[child];
-                lineages_map.update({child:new_parent});
-                del final_map[parent];
-                del final_map_copy[parent];
-                children_set=final_map[new_parent];
-                children_set.remove(parent);
-                children_set.add(child);
-                final_map.update({new_parent:children_set});
-                final_map_copy.update({new_parent:children_set.copy()});
-                if(len(children_set)>1 or new_parent==-1):
-                    done='True';
-                    parent=new_parent
-                else:
-                    #child=new_parent;
-                    parent=new_parent
+        if final_map.has_key(parent): #the parent may have been removed already in pruning
+##            print str(final_map)+" first if";
+##            print "parent";
+##            print parent
+            if(len(final_map[parent])==1 and not(parent==-1)): #final_map[parent] gives set(children)
+                child=final_map[parent].pop();
+##                print "child";
+##                print child;
+                done='False'
+                birth_time=0;
+                while(done=='False'):
+                    #remove the immediate parent and move back in time along the tree to parent of the immediate parent
+                    #call this parent of the immediate parent, new_parent. 
+                    new_parent=childtoparent_map[parent];
+                    #this next step is important to keep correct branch lengths while pruning
+                    birth_time_child=nodes[parent][0];
+                    nodes[child][0]=birth_time_child;
+                    del childtoparent_map[child];
+                    childtoparent_map.update({child:new_parent});
+##                    print final_map
+                    del final_map[parent];
+##                    print final_map
+                    children_set=final_map[new_parent];
+                    children_set.remove(parent);
+                    children_set.add(child);
+                    final_map.update({new_parent:children_set});
+                    #final_map.update({new_parent:children_set.copy()});
+##                    print final_map
+                    if(len(children_set)>1 or new_parent==-1):
+                        done='True';
+                        parent=new_parent
+                    else:
+                        #child=new_parent;
+                        parent=new_parent
+##                        print "parent";
+##                        print parent;
+
+##    print final_map                        
                 
     return (intermediate_map, final_map)               
             
