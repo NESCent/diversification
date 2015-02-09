@@ -1,53 +1,7 @@
-Junk code:
- 
-07/22/08
-Old main method. Now I have moved all the test cases below into cjumpchain_PZ1Test.py
-
-if __name__ == "__main__":
-    current_state_for_uncond_probs = [1000,1000]
-    upper = 1020
-    #sigma = (lambda, b, B, alpha, mu)
-    #sigma = [.01, .1, 1000, .05, .1]
-    p_lambda = 0.1
-    p_b = 0.2
-    p_B = 2000
-    p_alpha = 0.10
-    p_mu = 0.11
-    sigma = (p_lambda, p_b, p_B, p_alpha, p_mu) #btw you made a typo by flipping p_b and p_B around
-    
-    print CalculatePi(700, sigma)
-    
-    numerator = CalculatePi(999,sigma)
-    print numerator 
-    
-    print CalculatePi(1001,sigma)
-    
-    denominator = 0.0
-    for i in range(1000, upper): 
-        denominator=denominator+CalculatePi(i,sigma)
-    print denominator
-    #Reason why before we get -1IND. That's b/c we're essentially dividing 0/0. Why? Because
-    #before we were calculating sigma=(0.1, .1, 1000, .05, .1) = (lam, b, B, alpha, mu), 
-    #at say r_t = 1000, j=999
-    #Well, pi = C(b/alpha + j - 1, j) * (alpha / mu)^j * (1 - alpha/ mu)^(-b/alpha)
-    #      pi = C(1+999, 999) * (1/2)^999 * (1/2)^(-2) 
-    #      pi = C(1+999, 999) * (1/2)^999 * (4)
-    
-    # Look at the second term, it's very very close to 0. This is why pi is 0. 
-    # PiStar is just pi over a bunch of other Pi's. Well, they're almost all 0's, that's 
-    # why we get 0/0 = some infinity. 
-    
-    # Here's another way of looking at it, the second term is competing against 1st and 3rd term, 
-    # except the second term is increasing exponentially. So obviously if j is high, pi would
-    # come out to be zero. 
-    # There is no way about getting around this by messing around with sigma, the ONLY WAY
-    # is to lower j so that (alpha / mu)^j is not effectively 0. - Perry.  
-    
-    print numerator / denominator
-    
-    print CalculatePiStar(1001, current_state_for_uncond_probs, upper, sigma)
-    print UncondProbSTT(current_state_for_uncond_probs, upper, sigma)
-    print UncondProbSBB(current_state_for_uncond_probs, upper, sigma)
-    print UncondProbSBarrowT(current_state_for_uncond_probs, upper, sigma)
-    print UncondProbSBT(current_state_for_uncond_probs, upper, sigma)
-  
+This project was started in 2008 with the intention of developing a
+model for species diversification. However the code is not currently
+being maintained (and has not been maintained for several years) and
+the current status is unknown, unfortunately. The project developers
+(Ganeshkumar Ganapathy, Perry Zheng and Tally Balaban) have moved on
+to other positions, and little future development is expected in this
+project.
